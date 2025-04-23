@@ -7,15 +7,16 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000"
+      "url": "http://localhost:4040"
     }
   ],
   "paths": {
     "/login/": {
       "post": {
         "tags": [
-          "Login"
+          "Auth"
         ],
+        "summary": "Login",
         "description": "",
         "parameters": [
           {
@@ -41,25 +42,20 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": ""
+          "200": {
+            "description": "OK"
           }
         },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "email": {
+                  "senha": {
                     "example": "any"
                   },
-                  "password": {
+                  "email": {
                     "example": "any"
                   }
                 }
@@ -69,7 +65,7 @@
         }
       }
     },
-    "/api/users/": {
+    "/usuarios/": {
       "get": {
         "tags": [
           "Users"
@@ -85,20 +81,6 @@
             }
           },
           {
-            "name": "_order",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "authorization",
             "in": "header",
             "schema": {
@@ -106,8 +88,33 @@
             }
           },
           {
-            "name": "_size",
+            "name": "_limit",
             "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "default": 10,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "description": "Field to sort by (id, nome, email, login, funcao)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "description": "Order direction (asc or desc)",
+            "required": false,
+            "enum": [
+              "asc",
+              "desc"
+            ],
             "schema": {
               "type": "string"
             }
@@ -115,7 +122,39 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "List of users with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "nome": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "login": {
+                            "type": "string"
+                          },
+                          "funcao": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -162,7 +201,32 @@
         ],
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "nome": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "login": {
+                      "type": "string"
+                    },
+                    "funcao": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -177,22 +241,32 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": {
+                  "nome": {
                     "type": "string"
                   },
                   "email": {
                     "type": "string",
                     "format": "email"
                   },
-                  "password": {
+                  "login": {
+                    "type": "string"
+                  },
+                  "senha": {
+                    "type": "string"
+                  },
+                  "funcao": {
                     "type": "string",
-                    "format": "password"
+                    "enum": [
+                      "supervisor",
+                      "analista"
+                    ]
                   }
                 },
                 "required": [
-                  "name",
+                  "nome",
                   "email",
-                  "password"
+                  "login",
+                  "senha"
                 ]
               }
             }
@@ -200,16 +274,16 @@
         }
       }
     },
-    "/api/users/{_id}": {
+    "/usuarios/{id}": {
       "get": {
         "tags": [
           "Users"
         ],
-        "summary": "Get user by ID",
+        "summary": "Create new user",
         "description": "",
         "parameters": [
           {
-            "name": "_id",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -248,6 +322,9 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
           }
         },
         "security": [
@@ -260,92 +337,11 @@
         "tags": [
           "Users"
         ],
-        "summary": "Edit user by ID",
+        "summary": "Create new user",
         "description": "",
         "parameters": [
           {
-            "name": "_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_page",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_order",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "example": ""
-                },
-                "email": {
-                  "type": "string",
-                  "example": ""
-                },
-                "password": {
-                  "type": "string",
-                  "example": ""
-                }
-              },
-              "required": [
-                "name",
-                "email",
-                "password"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Delete user by ID",
-        "description": "",
-        "parameters": [
-          {
-            "name": "_id",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -384,176 +380,6 @@
         "responses": {
           "204": {
             "description": "No Content"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/products/": {
-      "get": {
-        "tags": [
-          "Products"
-        ],
-        "summary": "List all products with pagination",
-        "description": "",
-        "parameters": [
-          {
-            "name": "_page",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_order",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_size",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "Products"
-        ],
-        "summary": "Create a new product",
-        "description": "",
-        "parameters": [
-          {
-            "name": "_page",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_order",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Product"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/products/{_id}": {
-      "get": {
-        "tags": [
-          "Products"
-        ],
-        "summary": "Get a single product",
-        "description": "",
-        "parameters": [
-          {
-            "name": "_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_page",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_order",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
           },
           "404": {
             "description": "Not Found"
@@ -564,84 +390,16 @@
             "BearerAuth": []
           }
         ]
-      },
-      "put": {
-        "tags": [
-          "Products"
-        ],
-        "summary": "Edit an existing product",
-        "description": "",
-        "parameters": [
-          {
-            "name": "_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_page",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_order",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Product"
-              }
-            }
-          }
-        }
       },
       "delete": {
         "tags": [
-          "Products"
+          "Users"
         ],
-        "summary": "Delete a product",
+        "summary": "Create new user",
         "description": "",
         "parameters": [
           {
-            "name": "_id",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -708,186 +466,64 @@
           }
         }
       },
-      "Product": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "example": "object"
-          },
-          "required": {
-            "type": "array",
-            "example": [
-              "name",
-              "price",
-              "category",
-              "stock"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "example": "string"
-                  },
-                  "minLength": {
-                    "type": "number",
-                    "example": 2
-                  },
-                  "maxLength": {
-                    "type": "number",
-                    "example": 100
-                  },
-                  "example": {
-                    "type": "string",
-                    "example": "Smartphone XYZ"
-                  }
-                }
-              },
-              "price": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "example": "number"
-                  },
-                  "minimum": {
-                    "type": "number",
-                    "example": 0
-                  },
-                  "example": {
-                    "type": "number",
-                    "example": 1999.99
-                  }
-                }
-              },
-              "category": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "example": "string"
-                  },
-                  "minLength": {
-                    "type": "number",
-                    "example": 3
-                  },
-                  "maxLength": {
-                    "type": "number",
-                    "example": 50
-                  },
-                  "example": {
-                    "type": "string",
-                    "example": "Electronics"
-                  }
-                }
-              },
-              "stock": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "example": "integer"
-                  },
-                  "minimum": {
-                    "type": "number",
-                    "example": 0
-                  },
-                  "example": {
-                    "type": "number",
-                    "example": 100
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "User": {
         "type": "object",
         "properties": {
-          "type": {
-            "type": "string",
-            "example": "object"
-          },
-          "required": {
-            "type": "array",
-            "example": [
-              "name",
-              "email",
-              "password"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "properties": {
+          "nome": {
             "type": "object",
             "properties": {
-              "name": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "example": "string"
-                  },
-                  "minLength": {
-                    "type": "number",
-                    "example": 2
-                  },
-                  "maxLength": {
-                    "type": "number",
-                    "example": 100
-                  },
-                  "example": {
-                    "type": "string",
-                    "example": "João"
-                  }
-                }
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "email": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
               },
-              "email": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "example": "string"
-                  },
-                  "minimum": {
-                    "type": "number",
-                    "example": 0
-                  },
-                  "example": {
-                    "type": "string",
-                    "example": "example@example.com"
-                  }
-                }
+              "format": {
+                "type": "string",
+                "example": "email"
+              }
+            }
+          },
+          "login": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "senha": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "funcao": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
               },
-              "password": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "example": "string"
-                  },
-                  "minLength": {
-                    "type": "number",
-                    "example": 8
-                  },
-                  "maxLength": {
-                    "type": "number",
-                    "example": 20
-                  },
-                  "example": {
-                    "type": "string",
-                    "example": "password123"
-                  }
+              "enum": {
+                "type": "array",
+                "example": [
+                  "supervisor",
+                  "analista"
+                ],
+                "items": {
+                  "type": "string"
                 }
               }
             }

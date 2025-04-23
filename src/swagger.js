@@ -8,7 +8,7 @@ const doc = {
   },
   servers: [
     {
-      url: "http://localhost:3000",
+      url: "http://localhost:4040",
     }
   ],
   components: {
@@ -17,24 +17,12 @@ const doc = {
         code: "",
         message: "",
       },
-      Product: {
-        type: "object",
-        required: ["name", "price", "category", "stock"],
-        properties: {
-          name: { type: "string", minLength: 2, maxLength: 100, example: "Smartphone XYZ" },
-          price: { type: "number", minimum: 0, example: 1999.99 },
-          category: { type: "string", minLength: 3, maxLength: 50, example: "Electronics" },
-          stock: { type: "integer", minimum: 0, example: 100 }
-        }
-      },
       User: {
-        type: "object",
-        required: ["name", "email", "password"],
-        properties: {
-          name: { type: "string", minLength: 2, maxLength: 100, example: "João" },
-          email: { type: "string", minimum: 0, example: "example@example.com" },
-          password: { type: "string", minLength: 8, maxLength: 20, example: "password123" },
-        }
+        nome: { type: "string" },
+        email: { type: "string", format: "email" },
+        login: { type: "string" },
+        senha: { type: "string" },
+        funcao: { type: "string", enum: ["supervisor", "analista"] }
       }
     },
     securitySchemes: {
@@ -59,4 +47,4 @@ const endpointsFiles = ["./routes.js"];
 swaggerAutogen({ openapi: "3.0.0" })(outputFile, endpointsFiles, doc)
   .then(async () => {
     await import("./server.js");
-  });
+});

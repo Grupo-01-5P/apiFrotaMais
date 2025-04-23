@@ -1,12 +1,12 @@
 export default (req, res, next) => {
   res.hateos_item = (data) => {
     return {
-      ...data._doc,
+      ...data,
       _links: [
         { rel: "self", href: req.originalUrl, method: req.method },
         { rel: "list", href: req.baseUrl, method: "GET" },
-        { rel: "update", href: `${req.baseUrl}/${req.params._id}`, method: "PUT" },
-        { rel: "delete", href: `${req.baseUrl}/${req.params._id}`, method: "DELETE" },
+        { rel: "update", href: `${req.baseUrl}/${req.params.id}`, method: "PUT" },
+        { rel: "delete", href: `${req.baseUrl}/${req.params.id}`, method: "DELETE" },
       ],
     }
   }
@@ -18,9 +18,9 @@ export default (req, res, next) => {
 
     return {
       [name]: data.map((item) => ({
-        ...item._doc,
+        ...item,
         _links: [
-          { rel: "self", href: `${req.baseUrl}/${item._id}`, method: "GET" },
+          { rel: "self", href: `${req.baseUrl}/${item.id}`, method: "GET" },
         ],
       })),
       _page: {

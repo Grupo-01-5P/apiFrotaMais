@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id       Int       @id @default(autoincrement())
+  nome     String
+  email    String    @unique
+  login    String    @unique
+  senha    String
+  funcao   String     // 'supervisor' ou 'analista'
+  veiculos Veiculo[]  @relation("UsuarioVeiculos")
+  manutencoes Manutencao[] @relation("UsuarioManutencoes")
+}
+
+model Veiculo {
+  id              Int        @id @default(autoincrement())
+  placa           String     @unique
+  marca           String
+  modelo          String
+  anoFabricacao   Int
+  anoModelo       Int
+  cor             String
+  renavam         String
+  chassi          String
+  empresa         String
+  departamento    String
+  tipoVeiculo     String
+  supervisorId    Int
+  supervisor      Usuario    @relation("UsuarioVeiculos", fields: [supervisorId], references: [id])
+  manutencoes     Manutencao[]
+}
+
+model Oficina {
+  id           Int        @id @default(autoincrement())
+  nome         String
+  cnpj         String
+  rua          String
+  bairro       String
+  cidade       String
+  estado       String
+  email        String
+  telefone     String
+  recebeEmail  Boolean
+  orcamentos   Orcamento[]
+}
+
+model Manutencao {
+  id                  Int        @id @default(autoincrement())
+  veiculoId           Int
+  veiculo             Veiculo    @relation(fields: [veiculoId], references: [id])
+  descricaoProblema   String
+  localizacao         String
+  urgencia            String
+  status              String     @default("pendente")
+  dataSolicitacao     DateTime   @default(now())
+  analistaId          Int
+  analista            Usuario    @relation("UsuarioManutencoes", fields: [analistaId], references: [id])
+  orcamento           Orcamento?
+  entrega             Entrega?
+}
+
+model Orcamento {
+  id                Int                @id @default(autoincrement())
+  manutencaoId      Int                @unique
+  manutencao        Manutencao         @relation(fields: [manutencaoId], references: [id])
+  oficinaId         Int
+  oficina           Oficina            @relation(fields: [oficinaId], references: [id])
+  descricaoServico  String
+  valorMaoObra      Float
+  status            String             @default("pendente")
+  dataEnvio         DateTime           @default(now())
+  produtos          ProdutoOrcamento[]
+}
+
+model Produto {
+  id           Int                @id @default(autoincrement())
+  nome         String
+  descricao    String
+  precoMedio   Float
+  orcamentos   ProdutoOrcamento[]
+}
+
+model ProdutoOrcamento {
+  id           Int        @id @default(autoincrement())
+  orcamentoId  Int
+  produtoId    Int
+  valorUnitario Float
+  fornecedor   String
+
+  orcamento   Orcamento @relation(fields: [orcamentoId], references: [id])
+  produto     Produto   @relation(fields: [produtoId], references: [id])
+}
+
+model Entrega {
+  id             Int        @id @default(autoincrement())
+  manutencaoId   Int        @unique
+  manutencao     Manutencao @relation(fields: [manutencaoId], references: [id])
+  dataEntrega    DateTime
+  dataColeta     DateTime
+  odometro       Int
+  notaFiscal     String
+}

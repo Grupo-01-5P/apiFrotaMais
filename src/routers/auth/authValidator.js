@@ -7,7 +7,7 @@ export default yup
       yup
         .string()
         .required("Required (email)"),
-    password:
+    senha:
       yup
         .string()
         .required("Required (password)"),

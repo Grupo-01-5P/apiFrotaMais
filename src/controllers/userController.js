@@ -1,151 +1,249 @@
-import User from "../models/userModel.js";
+import prisma from "../config/database.js";
 import { hashPassword } from "../utils/bcrypt.js";
 import bcrypt from "bcrypt";
 
 export const login = async (req, res, next) => {
-  /*
-  #swagger.tags = ["Login"]
-  #swagger.security = [{ "BearerAuth": [] }]
-  */
-  try {
-    const user = await User.findOne({ email: req.body.email });
-
-    if (!user) {
-      res.unauthorized();
+    /*
+      #swagger.tags = ["Auth"]
+      #swagger.summary = "Login"
+      #swagger.responses[200]
+    */
+    try {
+        const { email, senha } = req.body;
+    
+        // Busca o usuário no banco
+        const user = await prisma.usuario.findUnique({
+        where: { email },
+        });
+    
+        if (!user) {
+            return res.unauthorized();
+        }
+        
+        const isMatch = await bcrypt.compare(req.body.senha, user.senha);
+        if (!isMatch) {
+            res.unauthorized();
+        }
+        
+        req.user = user;
+        next();
+    } catch (error) {
+        return next(error);
     }
-
-    const isMatch = await bcrypt.compare(req.body.password, user.password);
-    if (!isMatch) {
-      res.unauthorized();
-    }
-
-    req.user = user;
-    next();
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const showUser = async (req, res, next) => {
-  /*
-  #swagger.tags = ["Users"]
-  #swagger.summary = "Get user by ID"
-  #swagger.responses[200]
-  #swagger.security = [{ "BearerAuth": [] }]
-  */
-
-  try{
-    const user = await User.findOne(req.params)
-    .select("-password");
-  
-    res.ok(res.hateos_item(user));
-  }catch (err) {
-    next(err);
-  }
 }
 
-export const listUsers = async (req, res, next) => {
-  /*
-  #swagger.tags = ["Users"]
-  #swagger.summary = "List all users"
-  #swagger.responses[200]
-  #swagger.security = [{ "BearerAuth": [] }]
-  */
 
-  try {
-    const page = parseInt(req.query._page) || 1;
-    const size = parseInt(req.query._size) || 10;
-    const sort = req.query._sort || 'name'; 
-    const order = req.query._order === 'desc' ? -1 : 1; 
-
-    const offset = (page - 1) * size;
-
-    const users = await User.find({})
-      .skip(offset)
-      .limit(size)
-      .sort({ [sort]: order })
-      .select("-password");
-
-    const totalData = await User.countDocuments();
-    const totalPages = Math.ceil(totalData / size);
-
-    res.ok(res.hateos_list("users", users, totalPages));
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const createUser = async (req, res, next) => {
-  /*
-  #swagger.tags = ["Users"]
-  #swagger.summary = "Create new user"
-  #swagger.security = [{ "BearerAuth": [] }]
-   #swagger.requestBody = {
-    required: true,
-    content: {
-      "application/json": {
-        schema: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            email: { type: "string", format: "email" },
-            password: { type: "string", format: "password" }
-          },
-          required: ["name", "email", "password"]
+export const list = async (req, res, next) => {
+    /*
+      #swagger.tags = ["Users"]
+      #swagger.summary = "List all users"
+      #swagger.security = [{ "BearerAuth": [] }]
+      #swagger.parameters['_limit'] = {
+        in: 'query',
+        description: 'Number of items per page',
+        required: false,
+        type: 'integer',
+        default: 10
+      }
+      #swagger.parameters['_sort'] = {
+        in: 'query',
+        description: 'Field to sort by (id, nome, email, login, funcao)',
+        required: false,
+        type: 'string'
+      }
+      #swagger.parameters['_order'] = {
+        in: 'query',
+        description: 'Order direction (asc or desc)',
+        required: false,
+        type: 'string',
+        enum: ['asc', 'desc']
+      }
+      #swagger.responses[200] = {
+        description: "List of users with pagination",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "integer" },
+                      nome: { type: "string" },
+                      email: { type: "string" },
+                      login: { type: "string" },
+                      funcao: { type: "string" }
+                    }
+                  }
+                },
+              }
+            }
+          }
         }
       }
-    }
-  }
-  #swagger.responses[201]
-  */
-
-  try{
-    await new User(req.body).save();
-
-    res.created();
-  }catch (err) {
-    next(err);
-  }
-}
-
-export const editUser = async (req, res, next) => {
-  /*
-  #swagger.tags = ["Users"]
-  #swagger.summary = "Edit user by ID"
-  #swagger.security = [{ "BearerAuth": [] }]
-  #swagger.parameters["body"] = {
-    in: "body",
-    schema: {
-      $name: "",
-      $email: "",
-      $password: ""
-    }
-  }
-  #swagger.responses[200]
-  */
-
-  try{
-    const user = await User.findOneAndUpdate(req.params, req.body, { new: true }).select("-password");
+    */
+    try {
+      const page = parseInt(req.query._page) || 1;
+      const limit = parseInt(req.query._limit) || 10;
+      const offset = (page - 1) * limit;
   
-    res.ok(res.hateos_item(user));
-  }catch (err) {
-    next(err);
-  }
-}
-
-export const deleteUser = async (req, res, next) => {
-  /*
-  #swagger.tags = ["Users"]
-  #swagger.summary = "Delete user by ID"
-  #swagger.responses[204]
-  #swagger.security = [{ "BearerAuth": [] }]
-  */
-
-  try{
-    await User.findByIdAndDelete(req.params._id);
+      const totalItems = await prisma.usuario.count();
+      const totalPages = Math.ceil(totalItems / limit);
   
-    res.no_content();
-  }catch (err) {
-    next(err);
+      const order = req.query._order?.toLowerCase() === "desc" ? "desc" : "asc";
+      const sort = req.query._sort;
+      const validSortFields = ["id", "nome", "email", "login", "funcao"];
+      const orderBy = validSortFields.includes(sort) ? { [sort]: order } : undefined;
+  
+      const users = await prisma.usuario.findMany({
+        skip: offset,
+        take: limit,
+        ...(orderBy && { orderBy }),
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          login: true,
+          funcao: true,
+        },
+      });
+  
+      return res.ok({
+        data: users,
+        meta: {
+          totalItems,
+          currentPage: page,
+          totalPages,
+          itemsPerPage: limit,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        }
+      });
+    } catch (error) {
+      return next(error);
+    }
+  };
+  
+  
+
+export const getById = async (req, res, next) => {
+    /*
+      #swagger.tags = ["Users"]
+      #swagger.summary = "Create new user"
+      #swagger.security = [{ "BearerAuth": [] }]
+      #swagger.responses[200]
+    */
+  try {
+    const id = parseInt(req.params.id);
+    const user = await prisma.usuario.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            nome: true,
+            email: true,
+            login: true,
+            funcao: true,
+        },
+    });
+
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+
+    return res.ok(res.hateos_item(user));
+  } catch (error) {
+    return next(error);
   }
-}
+};
+
+
+export const create = async (req, res, next) => {
+    /*
+      #swagger.tags = ["Users"]
+      #swagger.summary = "Create new user"
+      #swagger.security = [{ "BearerAuth": [] }]
+      #swagger.requestBody = {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                nome: { type: "string" },
+                email: { type: "string", format: "email" },
+                login: { type: "string" },
+                senha: { type: "string" },
+                funcao: { type: "string", enum: ["supervisor", "analista"] }
+              },
+              required: ["nome", "email", "login", "senha"]
+            }
+          }
+        }
+      }
+      #swagger.responses[201] = {
+        description: "User created successfully",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                id: { type: "integer" },
+                nome: { type: "string" },
+                email: { type: "string", format: "email" },
+                login: { type: "string" },
+                funcao: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    */
+    try {
+      req.body.senha = await hashPassword(req.body.senha);
+      const user = await prisma.usuario.create({
+        data: req.body,
+      });
+      console.log(user);
+      return res.created(res.hateos_item(user));
+    } catch (error) {
+      return next(error);
+    }
+  };
+  
+
+export const update = async (req, res, next) => {
+     /*
+      #swagger.tags = ["Users"]
+      #swagger.summary = "Create new user"
+      #swagger.security = [{ "BearerAuth": [] }]
+      #swagger.responses[204]
+    */
+  try {
+    const id = parseInt(req.params.id);
+    const user = await prisma.usuario.update({
+      where: { id },
+      data: req.body,
+    });
+
+    return res.no_content(res.hateos_item(user));
+  } catch (error) {
+    return res.status(404).json({ error: "Usuário não encontrado ou inválido." });
+  }
+};
+
+
+export const remove = async (req, res, next) => {
+     /*
+      #swagger.tags = ["Users"]
+      #swagger.summary = "Create new user"
+      #swagger.security = [{ "BearerAuth": [] }]
+      #swagger.responses[204]
+    */
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.usuario.delete({ where: { id } });
+    return res.no_content();
+  } catch (error) {
+    return res.status(404).json({ error: "Usuário não encontrado." });
+  }
+};
