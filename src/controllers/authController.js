@@ -1,38 +1,46 @@
 import jsonwebtoken from "jsonwebtoken";
+import prisma from "../config/database.js";
 
-export const generate = (req, res, next) => {
-  if (!req.user) {
-    res.unauthorized();
+export const generate = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.unauthorized();
+    }
+
+    const payload = {
+      id: user.id,
+      email: user.email,
+      funcao: user.funcao,
+    };
+
+    const JWTSECRET = process.env.JWT_SECRET;
+
+    const token = jsonwebtoken.sign(payload, JWTSECRET, {
+      expiresIn: "12h",
+    });
+
+    return res.ok({ token });
+  } catch (error) {
+    return next(error);
   }
-
-  const payload = {
-    email: req.user.email,
-  };
-
-  const JWTSECRET = process.env.JWT_SECRET;
-
-  const token = jsonwebtoken.sign(payload, JWTSECRET, {
-    expiresIn: '1d',
-  });
-
-  res.ok({ token });
-}
+};
 
 export const verify = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (authHeader) {
     const token = authHeader.split(" ")[1];
-
     const JWTSECRET = process.env.JWT_SECRET;
-    return jsonwebtoken.verify(token, JWTSECRET, (err, payload) => {
-      if (err) return next(err);
 
+    try {
+      const payload = jsonwebtoken.verify(token, JWTSECRET);
       req.payload = payload;
-
       return next();
-    });
+    } catch (err) {
+      return res.unauthorized();
+    }
   }
 
-  res.unauthorized();
-}
+  return res.unauthorized();
+};

@@ -7,11 +7,9 @@ import dotenv from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import swaggerFile from "./config/swagger.json" with { type: "json" };
 
-import database from "./config/database.js";
 import routes from "./routes.js";
 
 dotenv.config();
-database.config(process.env.DATABASE);
 
 const app = express();
 
