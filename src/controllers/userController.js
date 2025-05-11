@@ -20,7 +20,7 @@ export const login = async (req, res, next) => {
             return res.unauthorized();
         }
         
-        const isMatch = await bcrypt.compare(req.body.senha, user.senha);
+        const isMatch = await bcrypt.compare(senha, user.senha);
         if (!isMatch) {
             res.unauthorized();
         }

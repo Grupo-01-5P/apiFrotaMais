@@ -51,18 +51,22 @@ model Oficina {
 }
 
 model Manutencao {
-  id                  Int        @id @default(autoincrement())
-  veiculoId           Int
-  veiculo             Veiculo    @relation(fields: [veiculoId], references: [id])
-  descricaoProblema   String
-  localizacao         String
-  urgencia            String
-  status              String     @default("pendente")
-  dataSolicitacao     DateTime   @default(now())
-  analistaId          Int
-  analista            Usuario    @relation("UsuarioManutencoes", fields: [analistaId], references: [id])
-  orcamento           Orcamento?
-  entrega             Entrega?
+  id                Int        @id @default(autoincrement())
+  veiculoId         Int
+  veiculo           Veiculo    @relation(fields: [veiculoId], references: [id])
+  descricaoProblema String
+  latitude          Float?     // Novo campo para a latitude
+  longitude         Float?     // Novo campo para a longitude
+  urgencia          String
+  status            String     @default("pendente")
+  dataSolicitacao   DateTime   @default(now())
+  dataAprovacao     DateTime?
+  dataReprovacao    DateTime?
+  motivoReprovacao  String?
+  analistaId        Int
+  analista          Usuario    @relation("UsuarioManutencoes", fields: [analistaId], references: [id])
+  orcamento         Orcamento?
+  entrega           Entrega?
 }
 
 model Orcamento {
