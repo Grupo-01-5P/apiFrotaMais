@@ -146,22 +146,29 @@ export const remove = async (req, res, next) => {
 export const aprovar = async (req, res, next) => {
   /*
     #swagger.tags = ["Maintenance"]
-    #swagger.summary = "Aprovar uma manutenção pendente"
+    #swagger.summary = "Aprovar uma manutenção pendente e definir oficina"
     #swagger.security = [{ "BearerAuth": [] }]
-    #swagger.description = "Altera o status da manutenção para 'Aprovada'"
+    #swagger.description = "Altera o status da manutenção para 'Aprovada' e define a oficina responsável"
+    #swagger.parameters['oficinaId'] = {
+      in: 'body',
+      description: 'ID da oficina responsável pela manutenção (opcional)',
+      required: false,
+      type: 'integer'
+    }
     #swagger.responses[204] = { description: "Manutenção aprovada com sucesso" }
-    #swagger.responses[404] = { description: "Manutenção não encontrada" }
+    #swagger.responses[404] = { description: "Manutenção ou oficina não encontrada" }
     #swagger.responses[400] = { description: "Manutenção não pode ser aprovada pois não está com status pendente" }
   */
   try {
     const id = parseInt(req.params.id);
+    const { oficinaId } = req.body; // Recebe o ID da oficina do corpo da requisição
     
     // Verificar se a manutenção existe e qual o status atual
     const manutencao = await prisma.manutencao.findUnique({
       where: { id },
       select: { status: true }
     });
-    console.log(manutencao);
+    
     if (!manutencao) {
       return res.status(404).json({ error: "Manutenção não encontrada." });
     }
@@ -173,17 +180,37 @@ export const aprovar = async (req, res, next) => {
       });
     }
 
-    // Aprovar a manutenção
+    // Verificar se a oficina existe, se um ID foi fornecido
+    if (oficinaId) {
+      const oficina = await prisma.oficina.findUnique({
+        where: { id: parseInt(oficinaId) }
+      });
+      
+      if (!oficina) {
+        return res.status(404).json({ error: "Oficina não encontrada." });
+      }
+    }
+
+    // Preparar os dados para atualização
+    const updateData = { 
+      status: "aprovada", // Note que mudei para minúsculo para manter consistência
+      dataAprovacao: new Date()
+    };
+
+    // Adicionar oficinaId apenas se foi fornecido
+    if (oficinaId) {
+      updateData.oficinaId = parseInt(oficinaId);
+    }
+
+    // Aprovar a manutenção e definir a oficina (se fornecida)
     const updated = await prisma.manutencao.update({
       where: { id },
-      data: { 
-        status: "Aprovada",
-        dataAprovacao: new Date() // Opcional: registrar quando foi aprovada
-      }
+      data: updateData
     });
 
-    return res.no_content(res.hateos_item(updated));
+    return res.status(204).send(); // ou use seu método personalizado: res.no_content(res.hateos_item(updated));
   } catch (error) {
+    console.error("Erro ao aprovar manutenção:", error);
     return next(error);
   }
 };

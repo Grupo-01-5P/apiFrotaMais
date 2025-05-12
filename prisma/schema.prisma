@@ -37,7 +37,7 @@ model Veiculo {
 }
 
 model Oficina {
-  id           Int        @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   nome         String
   cnpj         String
   rua          String
@@ -48,6 +48,7 @@ model Oficina {
   telefone     String
   recebeEmail  Boolean
   orcamentos   Orcamento[]
+  manutencoes  Manutencao[]  // Nova relação: uma oficina pode ter várias manutenções
 }
 
 model Manutencao {
@@ -65,6 +66,8 @@ model Manutencao {
   motivoReprovacao  String?
   analistaId        Int
   analista          Usuario    @relation("UsuarioManutencoes", fields: [analistaId], references: [id])
+  oficinaId         Int?       // Campo opcional para relacionar com uma oficina
+  oficina           Oficina?   @relation(fields: [oficinaId], references: [id]) // Relação opcional com Oficina
   orcamento         Orcamento?
   entrega           Entrega?
 }

@@ -81,6 +81,13 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "_limit",
             "in": "query",
             "description": "Number of items per page",
@@ -180,6 +187,13 @@
           {
             "name": "_sort",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -296,6 +310,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -344,6 +365,13 @@
           {
             "name": "_sort",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -398,6 +426,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -440,6 +475,13 @@
           {
             "name": "_sort",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -497,6 +539,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -521,7 +570,10 @@
                   "descricaoProblema": {
                     "example": "any"
                   },
-                  "localizacao": {
+                  "latitude": {
+                    "example": "any"
+                  },
+                  "longitude": {
                     "example": "any"
                   },
                   "urgencia": {
@@ -576,6 +628,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -621,6 +680,13 @@
           {
             "name": "_sort",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -672,6 +738,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -691,8 +764,8 @@
         "tags": [
           "Maintenance"
         ],
-        "summary": "Aprovar uma manutenção pendente",
-        "description": "Altera o status da manutenção para 'Aprovada'",
+        "summary": "Aprovar uma manutenção pendente e definir oficina",
+        "description": "Altera o status da manutenção para 'Aprovada' e define a oficina responsável",
         "parameters": [
           {
             "name": "id",
@@ -722,6 +795,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -732,14 +812,28 @@
             "description": "Manutenção não pode ser aprovada pois não está com status pendente"
           },
           "404": {
-            "description": "Manutenção não encontrada"
+            "description": "Manutenção ou oficina não encontrada"
           }
         },
         "security": [
           {
             "BearerAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "oficinaId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/maintenence/{id}/reprovar": {
@@ -775,6 +869,13 @@
           {
             "name": "_sort",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
             "schema": {
               "type": "string"
             }

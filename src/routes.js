@@ -17,8 +17,8 @@ routes.use(hateos);
 routes.use(handler);
 
 routes.use("/login", AuthRouter)
-routes.use("/api/users", UserRouter)
-routes.use("/api/maintenence", MaintenanceRouter)
+routes.use("/api/users", verify, UserRouter)
+routes.use("/api/maintenence", verify, MaintenanceRouter)
 
 routes.use(InternalServerError)
 routes.use(NotFound);
