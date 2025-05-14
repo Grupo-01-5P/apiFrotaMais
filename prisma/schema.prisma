@@ -14,6 +14,7 @@ model Usuario {
   login    String    @unique
   senha    String
   funcao   String     // 'supervisor' ou 'analista'
+  ativo    Boolean   @default(true)
   veiculos Veiculo[]  @relation("UsuarioVeiculos")
   manutencoes Manutencao[] @relation("UsuarioManutencoes")
 }
