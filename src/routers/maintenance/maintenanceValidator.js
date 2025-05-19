@@ -57,7 +57,7 @@ export default yup.object().shape({
       then: yup.string().required('Motivo da reprovação é obrigatório quando o status é reprovada.')
     }),
 
-  analistaId: yup
+  supervisorId: yup
     .number()
     .integer()
     .required('O ID do analista é obrigatório.'),

@@ -13,7 +13,7 @@ export const login = async (req, res, next) => {
     
         // Busca o usuário no banco
         const user = await prisma.usuario.findUnique({
-        where: { email },
+        where: { email, ativo: true },
         });
     
         if (!user) {
@@ -107,6 +107,7 @@ export const list = async (req, res, next) => {
           email: true,
           login: true,
           funcao: true,
+          ativo: true,
         },
       });
   

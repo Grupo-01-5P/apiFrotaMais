@@ -14,6 +14,7 @@ model Usuario {
   login    String    @unique
   senha    String
   funcao   String     // 'supervisor' ou 'analista'
+  ativo    Boolean   @default(true)
   veiculos Veiculo[]  @relation("UsuarioVeiculos")
   manutencoes Manutencao[] @relation("UsuarioManutencoes")
 }
@@ -64,8 +65,8 @@ model Manutencao {
   dataAprovacao     DateTime?
   dataReprovacao    DateTime?
   motivoReprovacao  String?
-  analistaId        Int
-  analista          Usuario    @relation("UsuarioManutencoes", fields: [analistaId], references: [id])
+  supervisorId        Int
+  supervisor          Usuario    @relation("UsuarioManutencoes", fields: [supervisorId], references: [id])
   oficinaId         Int?       // Campo opcional para relacionar com uma oficina
   oficina           Oficina?   @relation(fields: [oficinaId], references: [id]) // Relação opcional com Oficina
   orcamento         Orcamento?
