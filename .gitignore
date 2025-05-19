@@ -27,3 +27,5 @@ node_modules
 .DS_Store?
 .Trashes
 Thumbs.db
+
+/prisma/migrations

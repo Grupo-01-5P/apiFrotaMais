@@ -12,7 +12,11 @@ export const list = async (req, res, next) => {
     if (req.query.status) {
       whereClause.status = req.query.status;
     }
-
+    
+    if (req.payload && req.payload.funcao === 'supervisor') {
+      // Se for supervisor, filtra apenas as manutenções vinculadas a ele
+      whereClause.supervisorId = req.payload.id;
+    }
     const page = parseInt(req.query._page) || 1;
     const limit = parseInt(req.query._limit) || 10;
     const offset = (page - 1) * limit;
@@ -32,7 +36,7 @@ export const list = async (req, res, next) => {
       ...(orderBy && { orderBy }),
       include: {
         veiculo: true,
-        analista: {
+        supervisor: {
           select: { id: true, nome: true, email: true }
         }
       }
@@ -56,7 +60,7 @@ export const getById = async (req, res, next) => {
       where: { id },
       include: {
         veiculo: true,
-        analista: {
+        supervisor: {
           select: { id: true, nome: true, email: true }
         },
         orcamento: true,
@@ -89,7 +93,7 @@ export const create = async (req, res, next) => {
           longitude: req.body.longitude ? parseFloat(req.body.longitude) : null,
           urgencia: req.body.urgencia,
           status: req.body.status || "pendente",
-          analistaId: req.body.analistaId
+          supervisorId: req.body.supervisorId
         }
       });
   
