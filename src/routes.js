@@ -18,7 +18,7 @@ routes.use(handler);
 
 routes.use("/login", AuthRouter)
 routes.use("/usuarios", verify, UserRouter)
-routes.use("/orcamento",   BudgetRouter)//COLOCAR O VERIFY
+routes.use("/orcamento", verify, BudgetRouter)
 
 routes.use(InternalServerError)
 routes.use(NotFound);
