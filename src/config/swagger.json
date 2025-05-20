@@ -52,10 +52,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "senha": {
+                  "email": {
                     "example": "any"
                   },
-                  "email": {
+                  "senha": {
                     "example": "any"
                   }
                 }
@@ -65,7 +65,7 @@
         }
       }
     },
-    "/usuarios/": {
+    "/api/users/": {
       "get": {
         "tags": [
           "Users"
@@ -274,7 +274,7 @@
         }
       }
     },
-    "/usuarios/{id}": {
+    "/api/users/{id}": {
       "get": {
         "tags": [
           "Users"
@@ -450,16 +450,30 @@
         ]
       }
     },
-    "/orcamento/": {
+    "/api/maintenance/": {
       "get": {
         "tags": [
-          "Orcamentos"
+          "Maintenance"
         ],
-        "summary": "List all budgets",
+        "summary": "Listar manutenções",
         "description": "",
         "parameters": [
           {
             "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
             "in": "query",
             "schema": {
               "type": "string"
@@ -473,74 +487,23 @@
             }
           },
           {
-            "name": "_limit",
+            "name": "status",
             "in": "query",
-            "description": "Number of items per page",
-            "required": false,
-            "default": 10,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "_sort",
-            "in": "query",
-            "description": "Field to sort by (id, descricaoServico, valorMaoObra, status)",
-            "required": false,
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "_order",
+            "name": "_limit",
             "in": "query",
-            "description": "Order direction (asc or desc)",
-            "required": false,
-            "enum": [
-              "asc",
-              "desc"
-            ],
             "schema": {
               "type": "string"
             }
           }
         ],
         "responses": {
-          "200": {
-            "description": "List of budgets with pagination",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "integer"
-                          },
-                          "descricaoServico": {
-                            "type": "string"
-                          },
-                          "valorMaoObra": {
-                            "type": "number"
-                          },
-                          "status": {
-                            "type": "string"
-                          },
-                          "dataEnvio": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+          "default": {
+            "description": ""
           }
         },
         "security": [
@@ -551,9 +514,9 @@
       },
       "post": {
         "tags": [
-          "Orcamentos"
+          "Maintenance"
         ],
-        "summary": "Create a new budget",
+        "summary": "Criar nova manutenção",
         "description": "",
         "parameters": [
           {
@@ -586,33 +549,8 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": "Budget created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "integer"
-                    },
-                    "descricaoServico": {
-                      "type": "string"
-                    },
-                    "valorMaoObra": {
-                      "type": "number"
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "dataEnvio": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                }
-              }
-            }
+          "default": {
+            "description": ""
           }
         },
         "security": [
@@ -621,64 +559,45 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "manutencaoId": {
-                    "type": "integer"
+                  "veiculoId": {
+                    "example": "any"
                   },
-                  "oficinaId": {
-                    "type": "integer"
+                  "descricaoProblema": {
+                    "example": "any"
                   },
-                  "descricaoServico": {
-                    "type": "string"
+                  "latitude": {
+                    "example": "any"
                   },
-                  "valorMaoObra": {
-                    "type": "number"
+                  "longitude": {
+                    "example": "any"
+                  },
+                  "urgencia": {
+                    "example": "any"
                   },
                   "status": {
-                    "type": "string"
+                    "example": "any"
                   },
-                  "dataEnvio": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "produtos": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "produtoId": {
-                          "type": "integer"
-                        },
-                        "valorUnitario": {
-                          "type": "number"
-                        }
-                      }
-                    }
+                  "supervisorId": {
+                    "example": "any"
                   }
-                },
-                "required": [
-                  "manutencaoId",
-                  "oficinaId",
-                  "descricaoServico",
-                  "valorMaoObra"
-                ]
+                }
               }
             }
           }
         }
       }
     },
-    "/orcamento/{id}": {
+    "/api/maintenance/{id}": {
       "get": {
         "tags": [
-          "Orcamentos"
+          "Maintenance"
         ],
-        "summary": "Get a budget by id",
+        "summary": "Obter manutenção por ID",
         "description": "",
         "parameters": [
           {
@@ -719,33 +638,439 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Budget details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "integer"
-                    },
-                    "descricaoServico": {
-                      "type": "string"
-                    },
-                    "valorMaoObra": {
-                      "type": "number"
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "dataEnvio": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Atualizar manutenção existente",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Deletar manutenção",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/maintenance/{id}/aprovar": {
+      "patch": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Aprovar uma manutenção pendente e definir oficina",
+        "description": "Altera o status da manutenção para 'Aprovada' e define a oficina responsável",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Manutenção aprovada com sucesso"
+          },
+          "400": {
+            "description": "Manutenção não pode ser aprovada pois não está com status pendente"
+          },
+          "404": {
+            "description": "Manutenção ou oficina não encontrada"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "oficinaId": {
+                    "example": "any"
                   }
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/maintenance/{id}/reprovar": {
+      "patch": {
+        "tags": [
+          "Maintenance"
+        ],
+        "summary": "Reprovar uma manutenção pendente",
+        "description": "Altera o status da manutenção para 'Reprovada'",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Manutenção reprovada com sucesso"
+          },
+          "400": {
+            "description": "Manutenção não pode ser reprovada pois não está com status pendente"
+          },
+          "404": {
+            "description": "Manutenção não encontrada"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "motivoReprovacao": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/garage/": {
+      "get": {
+        "tags": [
+          "Garage"
+        ],
+        "summary": "Listar oficinas",
+        "description": "",
+        "parameters": [
+          {
+            "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nome",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_limit",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Garage"
+        ],
+        "summary": "Criar nova oficina",
+        "description": "",
+        "parameters": [
+          {
+            "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/garage/{id}": {
+      "get": {
+        "tags": [
+          "Garage"
+        ],
+        "summary": "Obter oficina por ID",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_order",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
           },
           "404": {
             "description": "Not Found"
@@ -759,9 +1084,9 @@
       },
       "put": {
         "tags": [
-          "Orcamentos"
+          "Garage"
         ],
-        "summary": "Update an existing budget",
+        "summary": "Atualizar oficina existente",
         "description": "",
         "parameters": [
           {
@@ -802,8 +1127,8 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Budget updated successfully"
+          "400": {
+            "description": "Bad Request"
           },
           "404": {
             "description": "Not Found"
@@ -817,9 +1142,9 @@
       },
       "delete": {
         "tags": [
-          "Orcamentos"
+          "Garage"
         ],
-        "summary": "Delete a budget",
+        "summary": "Deletar oficina",
         "description": "",
         "parameters": [
           {
@@ -860,8 +1185,8 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Budget deleted successfully"
+          "400": {
+            "description": "Bad Request"
           },
           "404": {
             "description": "Not Found"
