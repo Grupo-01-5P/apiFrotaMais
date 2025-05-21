@@ -23,7 +23,21 @@ const doc = {
         login: { type: "string" },
         senha: { type: "string" },
         funcao: { type: "string", enum: ["supervisor", "analista"] }
-      }
+      },
+      Vehicle: {
+        placa: { type: "string" },
+        marca: { type: "string" },
+        modelo: { type: "string" },
+        anoFabricacao: { type: "integer" },
+        anoModelo: { type: "integer" },
+        cor: { type: "string" },
+        renavam: { type: "string" },
+        chassi: { type: "string" },
+        empresa: { type: "string" },
+        departamento: { type: "string" },
+        tipoVeiculo: { type: "string", enum: ["carro", "moto", "caminhão", "ônibus", "van"] },
+        supervisorId: { type: "integer" }
+}
     },
     securitySchemes: {
         BearerAuth: {

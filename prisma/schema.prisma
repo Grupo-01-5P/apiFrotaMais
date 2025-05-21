@@ -14,7 +14,6 @@ model Usuario {
   login    String    @unique
   senha    String
   funcao   String     // 'supervisor' ou 'analista'
-  ativo    Boolean   @default(true)
   veiculos Veiculo[]  @relation("UsuarioVeiculos")
   manutencoes Manutencao[] @relation("UsuarioManutencoes")
 }
@@ -38,7 +37,7 @@ model Veiculo {
 }
 
 model Oficina {
-  id           Int           @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   nome         String
   cnpj         String
   rua          String
@@ -49,28 +48,21 @@ model Oficina {
   telefone     String
   recebeEmail  Boolean
   orcamentos   Orcamento[]
-  manutencoes  Manutencao[]  // Nova relação: uma oficina pode ter várias manutenções
 }
 
 model Manutencao {
-  id                Int        @id @default(autoincrement())
-  veiculoId         Int
-  veiculo           Veiculo    @relation(fields: [veiculoId], references: [id])
-  descricaoProblema String
-  latitude          Float?     // Novo campo para a latitude
-  longitude         Float?     // Novo campo para a longitude
-  urgencia          String
-  status            String     @default("pendente")
-  dataSolicitacao   DateTime   @default(now())
-  dataAprovacao     DateTime?
-  dataReprovacao    DateTime?
-  motivoReprovacao  String?
-  analistaId        Int
-  analista          Usuario    @relation("UsuarioManutencoes", fields: [analistaId], references: [id])
-  oficinaId         Int?       // Campo opcional para relacionar com uma oficina
-  oficina           Oficina?   @relation(fields: [oficinaId], references: [id]) // Relação opcional com Oficina
-  orcamento         Orcamento?
-  entrega           Entrega?
+  id                  Int        @id @default(autoincrement())
+  veiculoId           Int
+  veiculo             Veiculo    @relation(fields: [veiculoId], references: [id])
+  descricaoProblema   String
+  localizacao         String
+  urgencia            String
+  status              String     @default("pendente")
+  dataSolicitacao     DateTime   @default(now())
+  analistaId          Int
+  analista            Usuario    @relation("UsuarioManutencoes", fields: [analistaId], references: [id])
+  orcamento           Orcamento?
+  entrega             Entrega?
 }
 
 model Orcamento {
