@@ -450,7 +450,7 @@
         ]
       }
     },
-    "/api/maintenance/": {
+    "/api/maintenence/": {
       "get": {
         "tags": [
           "Maintenance"
@@ -592,7 +592,7 @@
         }
       }
     },
-    "/api/maintenance/{id}": {
+    "/api/maintenence/{id}": {
       "get": {
         "tags": [
           "Maintenance"
@@ -759,7 +759,7 @@
         ]
       }
     },
-    "/api/maintenance/{id}/aprovar": {
+    "/api/maintenence/{id}/aprovar": {
       "patch": {
         "tags": [
           "Maintenance"
@@ -836,7 +836,7 @@
         }
       }
     },
-    "/api/maintenance/{id}/reprovar": {
+    "/api/maintenence/{id}/reprovar": {
       "patch": {
         "tags": [
           "Maintenance"
@@ -1020,7 +1020,73 @@
           {
             "BearerAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nome",
+                  "cnpj",
+                  "rua",
+                  "bairro",
+                  "cidade",
+                  "estado",
+                  "email",
+                  "telefone",
+                  "recebeEmail"
+                ],
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "example": "Oficina Mecânica Silva"
+                  },
+                  "cnpj": {
+                    "type": "string",
+                    "example": "12345678901234",
+                    "pattern": "^\\d{14}$",
+                    "description": "CNPJ deve conter exatamente 14 números"
+                  },
+                  "rua": {
+                    "type": "string",
+                    "example": "Rua das Flores, 123"
+                  },
+                  "bairro": {
+                    "type": "string",
+                    "example": "Centro"
+                  },
+                  "cidade": {
+                    "type": "string",
+                    "example": "Toledo"
+                  },
+                  "estado": {
+                    "type": "string",
+                    "example": "PR",
+                    "minLength": 2,
+                    "maxLength": 2,
+                    "description": "Sigla do estado com 2 caracteres"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "contato@oficina.com.br"
+                  },
+                  "telefone": {
+                    "type": "string",
+                    "example": "(45) 99999-9999"
+                  },
+                  "recebeEmail": {
+                    "type": "boolean",
+                    "example": true,
+                    "description": "Indica se a oficina deseja receber emails"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/garage/{id}": {

@@ -19,7 +19,7 @@ routes.use(handler);
 
 routes.use("/login", AuthRouter)
 routes.use("/api/users", verify, UserRouter)
-routes.use("/api/maintenance", verify, MaintenanceRouter)
+routes.use("/api/maintenence", verify, MaintenanceRouter)
 routes.use("/api/garage", verify, GarageRouter)
 
 routes.use(InternalServerError)
