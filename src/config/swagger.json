@@ -52,10 +52,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "email": {
+                  "senha": {
                     "example": "any"
                   },
-                  "senha": {
+                  "email": {
                     "example": "any"
                   }
                 }
@@ -65,7 +65,7 @@
         }
       }
     },
-    "/api/users/": {
+    "/usuarios/": {
       "get": {
         "tags": [
           "Users"
@@ -274,7 +274,7 @@
         }
       }
     },
-    "/api/users/{id}": {
+    "/usuarios/{id}": {
       "get": {
         "tags": [
           "Users"
@@ -450,30 +450,16 @@
         ]
       }
     },
-    "/api/maintenence/": {
+    "/veiculos/": {
       "get": {
         "tags": [
-          "Maintenance"
+          "Veiculos"
         ],
-        "summary": "Listar manutenções",
+        "summary": "List all vehicles",
         "description": "",
         "parameters": [
           {
             "name": "_page",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_order",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "_sort",
             "in": "query",
             "schema": {
               "type": "string"
@@ -487,23 +473,132 @@
             }
           },
           {
-            "name": "status",
+            "name": "_limit",
             "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "default": 10,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "_sort",
+            "in": "query",
+            "description": "Field to sort by (id, placa, marca, modelo, etc)",
+            "required": false,
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "_limit",
+            "name": "_order",
             "in": "query",
+            "description": "Order direction (asc or desc)",
+            "required": false,
+            "enum": [
+              "asc",
+              "desc"
+            ],
             "schema": {
               "type": "string"
             }
           }
         ],
         "responses": {
-          "default": {
-            "description": ""
+          "200": {
+            "description": "List of vehicles with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "placa": {
+                            "type": "string",
+                            "example": "ABC1D23"
+                          },
+                          "marca": {
+                            "type": "string",
+                            "example": "Ford"
+                          },
+                          "modelo": {
+                            "type": "string",
+                            "example": "Fiesta"
+                          },
+                          "anoFabricacao": {
+                            "type": "integer",
+                            "example": 2020
+                          },
+                          "anoModelo": {
+                            "type": "integer",
+                            "example": 2021
+                          },
+                          "cor": {
+                            "type": "string",
+                            "example": "Prata"
+                          },
+                          "supervisor": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer",
+                                "example": 1
+                              },
+                              "nome": {
+                                "type": "string",
+                                "example": "João Silva"
+                              },
+                              "email": {
+                                "type": "string",
+                                "example": "joao@empresa.com"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "totalItems": {
+                          "type": "integer",
+                          "example": 100
+                        },
+                        "currentPage": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "itemsPerPage": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "hasNextPage": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "hasPrevPage": {
+                          "type": "boolean",
+                          "example": false
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -514,9 +609,9 @@
       },
       "post": {
         "tags": [
-          "Maintenance"
+          "Veiculos"
         ],
-        "summary": "Criar nova manutenção",
+        "summary": "Create new vehicle",
         "description": "",
         "parameters": [
           {
@@ -549,8 +644,49 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": ""
+          "201": {
+            "description": "Vehicle created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "placa": {
+                      "type": "string",
+                      "example": "ABC1D23"
+                    },
+                    "marca": {
+                      "type": "string",
+                      "example": "Ford"
+                    },
+                    "modelo": {
+                      "type": "string",
+                      "example": "Fiesta"
+                    },
+                    "anoFabricacao": {
+                      "type": "integer",
+                      "example": 2020
+                    },
+                    "anoModelo": {
+                      "type": "integer",
+                      "example": 2021
+                    },
+                    "cor": {
+                      "type": "string",
+                      "example": "Prata"
+                    },
+                    "supervisorId": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -559,45 +695,104 @@
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "veiculoId": {
-                    "example": "any"
+                  "placa": {
+                    "type": "string",
+                    "example": "ABC1D23",
+                    "description": "Formato AAA1A11 ou AAA1234"
                   },
-                  "descricaoProblema": {
-                    "example": "any"
+                  "marca": {
+                    "type": "string",
+                    "example": "Ford"
                   },
-                  "latitude": {
-                    "example": "any"
+                  "modelo": {
+                    "type": "string",
+                    "example": "Fiesta"
                   },
-                  "longitude": {
-                    "example": "any"
+                  "anoFabricacao": {
+                    "type": "integer",
+                    "example": 2020,
+                    "minimum": 1900
                   },
-                  "urgencia": {
-                    "example": "any"
+                  "anoModelo": {
+                    "type": "integer",
+                    "example": 2021,
+                    "minimum": 1900
                   },
-                  "status": {
-                    "example": "any"
+                  "cor": {
+                    "type": "string",
+                    "example": "Prata"
                   },
+<<<<<<< HEAD
                   "supervisorId": {
                     "example": "any"
+=======
+                  "renavam": {
+                    "type": "string",
+                    "example": "12345678901",
+                    "description": "11 dígitos"
+                  },
+                  "chassi": {
+                    "type": "string",
+                    "example": "9BWZZZ377VT004251",
+                    "description": "17 caracteres"
+                  },
+                  "empresa": {
+                    "type": "string",
+                    "example": "Empresa X"
+                  },
+                  "departamento": {
+                    "type": "string",
+                    "example": "Logística"
+                  },
+                  "tipoVeiculo": {
+                    "type": "string",
+                    "enum": [
+                      "carro",
+                      "moto",
+                      "caminhão",
+                      "ônibus",
+                      "van"
+                    ],
+                    "example": "carro"
+                  },
+                  "supervisorId": {
+                    "type": "integer",
+                    "example": 1
+>>>>>>> 3de59231a891f2a3833db806ad16017cf0a139ce
                   }
-                }
+                },
+                "required": [
+                  "placa",
+                  "marca",
+                  "modelo",
+                  "anoFabricacao",
+                  "anoModelo",
+                  "cor",
+                  "renavam",
+                  "chassi",
+                  "empresa",
+                  "departamento",
+                  "tipoVeiculo",
+                  "supervisorId"
+                ]
               }
             }
           }
         }
       }
     },
-    "/api/maintenence/{id}": {
+    "/veiculos/{id}": {
       "get": {
         "tags": [
-          "Maintenance"
+          "Veiculos"
         ],
-        "summary": "Obter manutenção por ID",
+        "summary": "Get vehicle by ID",
         "description": "",
         "parameters": [
           {
@@ -638,8 +833,110 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Vehicle details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "placa": {
+                      "type": "string",
+                      "example": "ABC1D23"
+                    },
+                    "marca": {
+                      "type": "string",
+                      "example": "Ford"
+                    },
+                    "modelo": {
+                      "type": "string",
+                      "example": "Fiesta"
+                    },
+                    "anoFabricacao": {
+                      "type": "integer",
+                      "example": 2020
+                    },
+                    "anoModelo": {
+                      "type": "integer",
+                      "example": 2021
+                    },
+                    "cor": {
+                      "type": "string",
+                      "example": "Prata"
+                    },
+                    "renavam": {
+                      "type": "string",
+                      "example": "12345678901"
+                    },
+                    "chassi": {
+                      "type": "string",
+                      "example": "9BWZZZ377VT004251"
+                    },
+                    "empresa": {
+                      "type": "string",
+                      "example": "Empresa X"
+                    },
+                    "departamento": {
+                      "type": "string",
+                      "example": "Logística"
+                    },
+                    "tipoVeiculo": {
+                      "type": "string",
+                      "example": "carro"
+                    },
+                    "supervisorId": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "supervisor": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "nome": {
+                          "type": "string",
+                          "example": "João Silva"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "joao@empresa.com"
+                        }
+                      }
+                    },
+                    "manutencoes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "data": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2023-01-15T10:30:00Z"
+                          },
+                          "descricao": {
+                            "type": "string",
+                            "example": "Troca de óleo"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
-            "description": "Not Found"
+            "description": "Vehicle not found"
           }
         },
         "security": [
@@ -650,9 +947,9 @@
       },
       "put": {
         "tags": [
-          "Maintenance"
+          "Veiculos"
         ],
-        "summary": "Atualizar manutenção existente",
+        "summary": "Update vehicle",
         "description": "",
         "parameters": [
           {
@@ -693,21 +990,137 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": ""
+          "200": {
+            "description": "Vehicle updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "placa": {
+                      "type": "string",
+                      "example": "ABC1D23"
+                    },
+                    "marca": {
+                      "type": "string",
+                      "example": "Ford"
+                    },
+                    "modelo": {
+                      "type": "string",
+                      "example": "Fiesta"
+                    },
+                    "anoFabricacao": {
+                      "type": "integer",
+                      "example": 2020
+                    },
+                    "anoModelo": {
+                      "type": "integer",
+                      "example": 2021
+                    },
+                    "cor": {
+                      "type": "string",
+                      "example": "Prata"
+                    },
+                    "supervisorId": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Vehicle not found"
           }
         },
         "security": [
           {
             "BearerAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "placa": {
+                    "type": "string",
+                    "example": "ABC1D23",
+                    "description": "Formato AAA1A11 ou AAA1234"
+                  },
+                  "marca": {
+                    "type": "string",
+                    "example": "Ford"
+                  },
+                  "modelo": {
+                    "type": "string",
+                    "example": "Fiesta"
+                  },
+                  "anoFabricacao": {
+                    "type": "integer",
+                    "example": 2020,
+                    "minimum": 1900
+                  },
+                  "anoModelo": {
+                    "type": "integer",
+                    "example": 2021,
+                    "minimum": 1900
+                  },
+                  "cor": {
+                    "type": "string",
+                    "example": "Prata"
+                  },
+                  "renavam": {
+                    "type": "string",
+                    "example": "12345678901",
+                    "description": "11 dígitos"
+                  },
+                  "chassi": {
+                    "type": "string",
+                    "example": "9BWZZZ377VT004251",
+                    "description": "17 caracteres"
+                  },
+                  "empresa": {
+                    "type": "string",
+                    "example": "Empresa X"
+                  },
+                  "departamento": {
+                    "type": "string",
+                    "example": "Logística"
+                  },
+                  "tipoVeiculo": {
+                    "type": "string",
+                    "enum": [
+                      "carro",
+                      "moto",
+                      "caminhão",
+                      "ônibus",
+                      "van"
+                    ],
+                    "example": "carro"
+                  },
+                  "supervisorId": {
+                    "type": "integer",
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "delete": {
         "tags": [
-          "Maintenance"
+          "Veiculos"
         ],
-        "summary": "Deletar manutenção",
+        "summary": "Delete vehicle",
         "description": "",
         "parameters": [
           {
@@ -748,8 +1161,11 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": ""
+          "204": {
+            "description": "Vehicle deleted successfully"
+          },
+          "404": {
+            "description": "Vehicle not found"
           }
         },
         "security": [
@@ -758,6 +1174,7 @@
           }
         ]
       }
+<<<<<<< HEAD
     },
     "/api/maintenence/{id}/aprovar": {
       "patch": {
@@ -1264,6 +1681,8 @@
           }
         ]
       }
+=======
+>>>>>>> 3de59231a891f2a3833db806ad16017cf0a139ce
     }
   },
   "components": {
@@ -1340,6 +1759,132 @@
                 "items": {
                   "type": "string"
                 }
+              }
+            }
+          }
+        }
+      },
+      "Vehicle": {
+        "type": "object",
+        "properties": {
+          "placa": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "marca": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "modelo": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "anoFabricacao": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "integer"
+              }
+            }
+          },
+          "anoModelo": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "integer"
+              }
+            }
+          },
+          "cor": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "renavam": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "chassi": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "empresa": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "departamento": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              }
+            }
+          },
+          "tipoVeiculo": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "string"
+              },
+              "enum": {
+                "type": "array",
+                "example": [
+                  "carro",
+                  "moto",
+                  "caminhão",
+                  "ônibus",
+                  "van"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "supervisorId": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "integer"
               }
             }
           }
