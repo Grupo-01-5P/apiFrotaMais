@@ -48,6 +48,7 @@ model Oficina {
   telefone     String
   recebeEmail  Boolean
   orcamentos   Orcamento[]
+  manutencoes  Manutencao[] 
 }
 
 model Manutencao {
