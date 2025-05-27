@@ -17,6 +17,7 @@ model Usuario {
   ativo    Boolean   @default(true)
   veiculos Veiculo[]  @relation("UsuarioVeiculos")
   manutencoes Manutencao[] @relation("UsuarioManutencoes")
+  inoperantesResponsavel Inoperante[] @relation("InoperanteResponsavel")
 }
 
 model Veiculo {
@@ -35,6 +36,7 @@ model Veiculo {
   supervisorId    Int
   supervisor      Usuario    @relation("UsuarioVeiculos", fields: [supervisorId], references: [id])
   manutencoes     Manutencao[]
+  inoperantes Inoperante[] @relation("InoperanteVeiculo")
 }
 
 model Oficina {
@@ -50,6 +52,7 @@ model Oficina {
   recebeEmail  Boolean
   orcamentos   Orcamento[]
   manutencoes  Manutencao[]  // Nova relação: uma oficina pode ter várias manutenções
+  inoperantes Inoperante[] @relation("InoperanteOficina")
 }
 
 model Manutencao {
@@ -114,3 +117,16 @@ model Entrega {
   odometro       Int
   notaFiscal     String
 }
+
+model Inoperante {
+  id             Int      @id @default(autoincrement())
+  veiculoId      Int
+  veiculo        Veiculo  @relation("InoperanteVeiculo", fields: [veiculoId], references: [id])
+
+  oficinaId      Int
+  oficina        Oficina  @relation("InoperanteOficina", fields: [oficinaId], references: [id])
+
+  responsavelId  Int
+  responsavel    Usuario  @relation("InoperanteResponsavel", fields: [responsavelId], references: [id])
+}
+
