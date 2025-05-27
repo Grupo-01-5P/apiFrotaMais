@@ -19,6 +19,7 @@ router.get("/completed", (req, res, next) => {
 });
 
 router.get("/:id", controller.getById);
+
 router.get("/phases", controller.getPhaseInfo);
 
 export default router;

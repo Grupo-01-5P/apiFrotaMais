@@ -5,13 +5,13 @@ import bcrypt from "bcrypt";
 
 export const listInoperantVehicles = async (req, res, next) => {
   try {
+    const { _page, _limit, _sort, _order, status } = req.query;
+
     const whereClause = {
       veiculo: {
         manutencoes: {
           some: {
-            status: {
-              in: ["aprovado", "concluido"],
-            },
+            status: status ? status : { in: ["aprovado", "concluido"] },
           },
         },
       },
@@ -24,19 +24,18 @@ export const listInoperantVehicles = async (req, res, next) => {
       };
     }
 
-    const page = parseInt(req.query._page) || 1;
-    const limit = parseInt(req.query._limit) || 10;
+    const page = parseInt(_page) || 1;
+    const limit = parseInt(_limit) || 10;
     const offset = (page - 1) * limit;
 
     const totalItems = await prisma.inoperante.count({ where: whereClause });
     const totalPages = Math.ceil(totalItems / limit);
 
-    const order = req.query._order?.toLowerCase() === "desc" ? "desc" : "asc";
-    const sort = req.query._sort;
+    const order = _order?.toLowerCase() === "desc" ? "desc" : "asc";
     const validSortFields = ["id", "veiculoId", "oficinaId", "responsavelId"];
-    const orderBy = validSortFields.includes(sort) ? { [sort]: order } : undefined;
+    const orderBy = validSortFields.includes(_sort) ? { [_sort]: order } : undefined;
 
-    const inoperantes = await prisma.inoperante.findMany({
+    const vehicles = await prisma.inoperante.findMany({
       where: whereClause,
       skip: offset,
       take: limit,
@@ -59,9 +58,7 @@ export const listInoperantVehicles = async (req, res, next) => {
             },
             manutencoes: {
               where: {
-                status: {
-                  in: ["aprovado", "concluido"],
-                },
+                status: status ? status : { in: ["aprovado", "concluido"] },
               },
               select: {
                 status: true,
@@ -86,8 +83,8 @@ export const listInoperantVehicles = async (req, res, next) => {
       },
     });
 
-    return res.status(200).json({
-      data: inoperantes,
+    return res.ok({
+      data: vehicles,
       meta: {
         totalItems,
         currentPage: page,
@@ -102,17 +99,73 @@ export const listInoperantVehicles = async (req, res, next) => {
   }
 };
 
-export const listInoperative = async (req, res, next) => {
-   
-}
 
-export const listCompleted = async (req, res, next) => {
-   
-}
+export const getById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
-export const getById  = async (req, res, next) => {
-   
-}
+    const inoperante = await prisma.inoperante.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+      include: {
+        veiculo: {
+          select: {
+            placa: true,
+            marca: true,
+            modelo: true,
+            anoModelo: true,
+            cor: true,
+            empresa: true,
+            departamento: true,
+            supervisor: {
+              select: {
+                nome: true,
+                email: true,
+              },
+            },
+            manutencoes: {
+              select: {
+                status: true,
+                descricaoProblema: true,
+                dataSolicitacao: true,
+              },
+            },
+          },
+        },
+        oficina: {
+          select: {
+            telefone: true,
+            rua: true,
+            bairro: true,
+            cidade: true,
+            estado: true,
+          },
+        },
+        responsavel: {
+          select: {
+            nome: true,
+          },
+        },
+      },
+    });
+
+    if (!inoperante) {
+      return res.not_found({ message: "Registro de veículo inoperante não encontrado." });
+    }
+
+    if (req.payload && req.payload.funcao === 'supervisor') {
+      if (inoperante.veiculo.supervisor.id !== req.payload.id) {
+        return res.forbidden({ message: "Acesso Proibido: Você não tem permissão para visualizar este registro de veículo." });
+      }
+    }
+
+    return res.ok(inoperante);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 
 export const getPhaseInfo = async (req, res, next) => {
    
