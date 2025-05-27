@@ -3,7 +3,7 @@ import { hashPassword } from "../utils/bcrypt.js";
 import bcrypt from "bcrypt";
 
 
-export const listAll = async (req, res, next) => {
+export const listInoperantVehicles = async (req, res, next) => {
   try {
     const whereClause = {
       veiculo: {
