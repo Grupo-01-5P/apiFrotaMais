@@ -31,8 +31,8 @@ model Veiculo {
   empresa         String
   departamento    String
   tipoVeiculo     String
-  supervisorId    Int
-  supervisor      Usuario    @relation("UsuarioVeiculos", fields: [supervisorId], references: [id])
+  supervisorId    Int?
+  supervisor      Usuario?    @relation("UsuarioVeiculos", fields: [supervisorId], references: [id])
   manutencoes     Manutencao[]
 }
 

@@ -73,6 +73,12 @@ export const list = async (req, res, next) => {
       }
     */
     try {
+        let whereClause = {};
+        if (req.payload && req.payload.funcao === 'supervisor') {
+          // Se for supervisor, filtra apenas os veiculos relacionados a ele
+          whereClause.supervisorId = req.payload.id;
+        }
+
         const page = parseInt(req.query._page) || 1;
         const limit = parseInt(req.query._limit) || 10;
         const offset = (page - 1) * limit;
@@ -86,6 +92,7 @@ export const list = async (req, res, next) => {
         const orderBy = validSortFields.includes(sort) ? { [sort]: order } : undefined;
 
         const veiculos = await prisma.veiculo.findMany({
+            where: whereClause,
             skip: offset,
             take: limit,
             ...(orderBy && { orderBy }),
@@ -422,6 +429,267 @@ export const remove = async (req, res, next) => {
 
         await prisma.veiculo.delete({ where: { id } });
         return res.noContent();
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const getAvailable = async (req, res, next) => {
+    /*
+      #swagger.tags = ["Veiculos"]
+      #swagger.summary = "Get vehicles not in maintenance with 'Em andamento' status"
+      #swagger.description = "Returns all vehicles that are not currently in maintenance with status 'Em andamento'"
+      #swagger.security = [{ "BearerAuth": [] }]
+      #swagger.parameters['_limit'] = {
+        in: 'query',
+        description: 'Number of items per page',
+        required: false,
+        type: 'integer',
+        default: 10
+      }
+      #swagger.parameters['_sort'] = {
+        in: 'query',
+        description: 'Field to sort by (id, placa, marca, modelo, etc)',
+        required: false,
+        type: 'string'
+      }
+      #swagger.parameters['_order'] = {
+        in: 'query',
+        description: 'Order direction (asc or desc)',
+        required: false,
+        type: 'string',
+        enum: ['asc', 'desc']
+      }
+      #swagger.responses[200] = {
+        description: "List of available vehicles with pagination",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "integer", example: 1 },
+                      placa: { type: "string", example: "ABC1D23" },
+                      marca: { type: "string", example: "Ford" },
+                      modelo: { type: "string", example: "Fiesta" },
+                      anoFabricacao: { type: "integer", example: 2020 },
+                      anoModelo: { type: "integer", example: 2021 },
+                      cor: { type: "string", example: "Prata" },
+                      tipoVeiculo: { type: "string", example: "carro" },
+                      supervisor: {
+                        type: "object",
+                        properties: {
+                          id: { type: "integer", example: 1 },
+                          nome: { type: "string", example: "João Silva" },
+                          email: { type: "string", example: "joao@empresa.com" }
+                        }
+                      }
+                    }
+                  }
+                },
+                meta: {
+                  type: "object",
+                  properties: {
+                    totalItems: { type: "integer", example: 50 },
+                    currentPage: { type: "integer", example: 1 },
+                    totalPages: { type: "integer", example: 5 },
+                    itemsPerPage: { type: "integer", example: 10 },
+                    hasNextPage: { type: "boolean", example: true },
+                    hasPrevPage: { type: "boolean", example: false }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    */
+    try {
+        let whereClause = {
+          // Exclui veículos que têm manutenções com status diferente de 'reprovada' ou 'concluída'
+          NOT: {
+              manutencoes: {
+                  some: {
+                      status: {
+                          // This finds any maintenance where the status is NOT 'reprovada' AND NOT 'concluída'
+                          // In other words, it finds 'pendente', 'em andamento', etc.
+                          notIn: ["reprovada", "concluída"]
+                      }
+                  }
+              }
+          }
+      };
+
+        // Se for supervisor, filtra apenas os veículos relacionados a ele
+        if (req.payload && req.payload.funcao === 'supervisor') {
+            whereClause.supervisorId = req.payload.id;
+        }
+        const page = parseInt(req.query._page) || 1;
+        const limit = parseInt(req.query._limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Conta total de veículos disponíveis
+        const totalItems = await prisma.veiculo.count({
+            where: whereClause
+        });
+        
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const order = req.query._order?.toLowerCase() === "desc" ? "desc" : "asc";
+        const sort = req.query._sort;
+        const validSortFields = ["id", "placa", "marca", "modelo", "anoFabricacao", "anoModelo", "tipoVeiculo"];
+        const orderBy = validSortFields.includes(sort) ? { [sort]: order } : undefined;
+
+        const veiculosDisponiveis = await prisma.veiculo.findMany({
+            where: whereClause,
+            skip: offset,
+            take: limit,
+            ...(orderBy && { orderBy }),
+            include: {
+                supervisor: {
+                    select: {
+                        id: true,
+                        nome: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        return res.ok(res.hateos_list("veiculosDisponiveis", veiculosDisponiveis, totalPages));
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const getVehiclesWithoutSupervisor = async (req, res, next) => {
+    /*
+      #swagger.tags = ["Veiculos"]
+      #swagger.summary = "Get vehicles without supervisor"
+      #swagger.description = "Returns all vehicles that don't have a supervisor assigned or have an invalid supervisor reference"
+      #swagger.security = [{ "BearerAuth": [] }]
+      #swagger.parameters['_page'] = {
+        in: 'query',
+        description: 'Page number',
+        required: false,
+        type: 'integer',
+        default: 1
+      }
+      #swagger.parameters['_limit'] = {
+        in: 'query',
+        description: 'Number of items per page',
+        required: false,
+        type: 'integer',
+        default: 10
+      }
+      #swagger.parameters['_sort'] = {
+        in: 'query',
+        description: 'Field to sort by (id, placa, marca, modelo, etc)',
+        required: false,
+        type: 'string'
+      }
+      #swagger.parameters['_order'] = {
+        in: 'query',
+        description: 'Order direction (asc or desc)',
+        required: false,
+        type: 'string',
+        enum: ['asc', 'desc']
+      }
+      #swagger.responses[200] = {
+        description: "List of vehicles without supervisor with pagination",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "integer", example: 1 },
+                      placa: { type: "string", example: "ABC1D23" },
+                      marca: { type: "string", example: "Ford" },
+                      modelo: { type: "string", example: "Fiesta" },
+                      anoFabricacao: { type: "integer", example: 2020 },
+                      anoModelo: { type: "integer", example: 2021 },
+                      cor: { type: "string", example: "Prata" },
+                      renavam: { type: "string", example: "12345678901" },
+                      chassi: { type: "string", example: "9BWZZZ377VT004251" },
+                      empresa: { type: "string", example: "Empresa X" },
+                      departamento: { type: "string", example: "Logística" },
+                      tipoVeiculo: { type: "string", example: "carro" },
+                      supervisorId: { type: "integer", example: null },
+                      supervisor: { type: "null", example: null }
+                    }
+                  }
+                },
+                meta: {
+                  type: "object",
+                  properties: {
+                    totalItems: { type: "integer", example: 5 },
+                    currentPage: { type: "integer", example: 1 },
+                    totalPages: { type: "integer", example: 1 },
+                    itemsPerPage: { type: "integer", example: 10 },
+                    hasNextPage: { type: "boolean", example: false },
+                    hasPrevPage: { type: "boolean", example: false }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    */
+    try {
+        const whereClause = {
+            OR: [
+                { supervisorId: null },
+                { supervisor: null }
+            ]
+        };
+
+        const page = parseInt(req.query._page) || 1;
+        const limit = parseInt(req.query._limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Conta total de veículos sem supervisor
+        const totalItems = await prisma.veiculo.count({
+            where: whereClause
+        });
+        
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const order = req.query._order?.toLowerCase() === "desc" ? "desc" : "asc";
+        const sort = req.query._sort;
+        const validSortFields = ["id", "placa", "marca", "modelo", "anoFabricacao", "anoModelo", "tipoVeiculo"];
+        const orderBy = validSortFields.includes(sort) ? { [sort]: order } : undefined;
+
+        const veiculosSemSupervisor = await prisma.veiculo.findMany({
+            where: whereClause,
+            skip: offset,
+            take: limit,
+            ...(orderBy && { orderBy }),
+            include: {
+                supervisor: true
+            }
+        });
+
+        return res.ok({
+            data: veiculosSemSupervisor,
+            meta: {
+                totalItems,
+                currentPage: page,
+                totalPages,
+                itemsPerPage: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            }
+        });
     } catch (error) {
         return next(error);
     }

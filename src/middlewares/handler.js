@@ -21,5 +21,13 @@ export default (_, res, next) => {
     .status(httpStatus.UNAUTHORIZED)
     .send();
 
+  res.badRequest = (data) => res
+    .status(httpStatus.BAD_REQUEST)
+    .send(data);
+
+  res.notFound = (data) => res
+    .status(httpStatus.NOT_FOUND)
+    .send(data);
+
   next();
 }

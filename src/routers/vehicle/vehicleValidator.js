@@ -12,7 +12,7 @@ export default yup.object().shape({
     empresa: yup.string().required(),
     departamento: yup.string().required(),
     tipoVeiculo: yup.string().oneOf(['carro','moto', 'caminhão', 'ônibus', 'van']).required(),
-    supervisorId: yup.number().integer().positive().required(),
+    supervisorId: yup.number().integer().positive(),
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////
