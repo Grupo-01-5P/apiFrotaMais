@@ -38,7 +38,8 @@ export const list = async (req, res, next) => {
         veiculo: true,
         supervisor: {
           select: { id: true, nome: true, email: true }
-        }
+        },
+        oficina: true,
       }
     });
 
