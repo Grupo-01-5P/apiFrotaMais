@@ -4,6 +4,29 @@ import bcrypt from "bcrypt";
 
 
 export const listInoperantVehicles = async (req, res, next) => {
+  /*
+    #swagger.tags = ["Inoperative"]
+    #swagger.summary = "Listar veículos inoperantes"
+    #swagger.security = [{ "BearerAuth": [] }]
+    #swagger.parameters['status'] = {
+      in: 'query',
+      description: 'Filtrar por status (aprovado/concluido)',
+      required: false,
+      type: 'string'
+    }
+    #swagger.parameters['_page'] = {
+      in: 'query',
+      description: 'Número da página',
+      required: false,
+      type: 'integer'
+    }
+    #swagger.parameters['_limit'] = {
+      in: 'query',
+      description: 'Limite de itens por página',
+      required: false,
+      type: 'integer'
+    }
+  */
   try {
     const { _page, _limit, _sort, _order, status } = req.query;
 
@@ -101,6 +124,20 @@ export const listInoperantVehicles = async (req, res, next) => {
 
 
 export const getById = async (req, res, next) => {
+  /*
+    #swagger.tags = ["Inoperative"]
+    #swagger.summary = "Obter veículo inoperante por ID"
+    #swagger.security = [{ "BearerAuth": [] }]
+    #swagger.parameters['id'] = {
+      in: 'path',
+      description: 'ID do veículo inoperante',
+      required: true,
+      type: 'integer'
+    }
+    #swagger.responses[200] = { description: "Detalhes do veículo inoperante" }
+    #swagger.responses[404] = { description: "Veículo inoperante não encontrado" }
+    #swagger.responses[403] = { description: "Acesso proibido" }
+  */
   try {
     const { id } = req.params;
 
@@ -168,6 +205,36 @@ export const getById = async (req, res, next) => {
 
 
 export const getPhaseInfo = async (req, res, next) => {
+  /*
+    #swagger.tags = ["Inoperative"]
+    #swagger.summary = "Obter informações da fase atual do veículo inoperante"
+    #swagger.security = [{ "BearerAuth": [] }]
+    #swagger.parameters['id'] = {
+      in: 'path',
+      description: 'ID do veículo inoperante',
+      required: true,
+      type: 'integer'
+    }
+    #swagger.responses[200] = { 
+      description: "Informações da fase",
+      schema: {
+        id: 1,
+        faseAtual: "FASE1",
+        updatedAt: "2024-03-20T10:00:00Z",
+        veiculo: {
+          placa: "ABC1234",
+          marca: "Toyota",
+          modelo: "Corolla"
+        },
+        responsavel: {
+          nome: "João Silva",
+          funcao: "supervisor"
+        }
+      }
+    }
+    #swagger.responses[404] = { description: "Veículo inoperante não encontrado" }
+    #swagger.responses[403] = { description: "Acesso proibido" }
+  */
   try {
     const { id } = req.params;
 
@@ -214,6 +281,45 @@ export const getPhaseInfo = async (req, res, next) => {
 
 
 export const updatePhase = async (req, res, next) => {
+  /*
+    #swagger.tags = ["Inoperative"]
+    #swagger.summary = "Atualizar fase do veículo inoperante"
+    #swagger.security = [{ "BearerAuth": [] }]
+    #swagger.parameters['id'] = {
+      in: 'path',
+      description: 'ID do veículo inoperante',
+      required: true,
+      type: 'integer'
+    }
+    #swagger.parameters['body'] = {
+      in: 'body',
+      description: 'Dados da fase',
+      required: true,
+      schema: {
+        fase: "FASE1"
+      }
+    }
+    #swagger.responses[200] = { 
+      description: "Fase atualizada com sucesso",
+      schema: {
+        id: 1,
+        faseAtual: "FASE1",
+        updatedAt: "2024-03-20T10:00:00Z",
+        veiculo: {
+          placa: "ABC1234",
+          marca: "Toyota",
+          modelo: "Corolla"
+        },
+        responsavel: {
+          nome: "João Silva",
+          funcao: "supervisor"
+        }
+      }
+    }
+    #swagger.responses[400] = { description: "Fase inválida" }
+    #swagger.responses[404] = { description: "Veículo inoperante não encontrado" }
+    #swagger.responses[403] = { description: "Acesso proibido ou sem permissão para atualizar" }
+  */
   try {
     const { id } = req.params;
     const { fase } = req.body;

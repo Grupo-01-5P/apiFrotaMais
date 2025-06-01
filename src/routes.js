@@ -20,11 +20,6 @@ routes.use(hateos);
 routes.use(handler);
 
 routes.use("/login", AuthRouter)
-// routes.use("/usuarios", UserRouter)
-// routes.use("/orcamento", BudgetRouter)
-// routes.use("/api/users", UserRouter)
-// routes.use("/api/maintenance", MaintenanceRouter)
-// routes.use("/api/garage", GarageRouter)
 
 routes.use("/usuarios", verify, UserRouter)
 routes.use("/orcamento", verify, BudgetRouter)
