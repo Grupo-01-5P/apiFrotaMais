@@ -118,15 +118,21 @@ model Entrega {
   notaFiscal     String
 }
 
+enum FaseInoperante {
+  FASE1  // Iniciar viagem até a mecânica
+  FASE2  // Deixar veículo para manutenção
+  FASE3  // Serviço finalizado
+  FASE4  // Retorno com veículo
+}
+
 model Inoperante {
   id             Int      @id @default(autoincrement())
   veiculoId      Int
   veiculo        Veiculo  @relation("InoperanteVeiculo", fields: [veiculoId], references: [id])
-
   oficinaId      Int
   oficina        Oficina  @relation("InoperanteOficina", fields: [oficinaId], references: [id])
-
   responsavelId  Int
   responsavel    Usuario  @relation("InoperanteResponsavel", fields: [responsavelId], references: [id])
+  faseAtual      FaseInoperante @default(FASE1)
+  updatedAt      DateTime @updatedAt
 }
-

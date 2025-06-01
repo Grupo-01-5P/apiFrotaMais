@@ -168,6 +168,117 @@ export const getById = async (req, res, next) => {
 
 
 export const getPhaseInfo = async (req, res, next) => {
-   
-}
+  try {
+    const { id } = req.params;
+
+    const inoperante = await prisma.inoperante.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+      select: {
+        id: true,
+        faseAtual: true,
+        updatedAt: true,
+        veiculo: {
+          select: {
+            placa: true,
+            marca: true,
+            modelo: true,
+          }
+        },
+        responsavel: {
+          select: {
+            nome: true,
+            funcao: true,
+          }
+        }
+      }
+    });
+
+    if (!inoperante) {
+      return res.not_found({ message: "Veículo inoperante não encontrado." });
+    }
+
+    // Verifica permissão do supervisor
+    if (req.payload && req.payload.funcao === 'supervisor') {
+      if (inoperante.responsavel.id !== req.payload.id) {
+        return res.forbidden({ message: "Acesso Proibido: Você não tem permissão para visualizar este registro." });
+      }
+    }
+
+    return res.ok(inoperante);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+export const updatePhase = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { fase } = req.body;
+
+    // Valida se a fase é válida
+    const fasesValidas = ['FASE1', 'FASE2', 'FASE3', 'FASE4'];
+    if (!fasesValidas.includes(fase)) {
+      return res.bad_request({ message: "Fase inválida." });
+    }
+
+    const inoperante = await prisma.inoperante.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        responsavel: true,
+      }
+    });
+
+    // Verifica se o inoperante existe
+    if (!inoperante) {
+      return res.not_found({ message: "Veículo inoperante não encontrado." });
+    }
+
+    // Lógica específica para cada função
+    if (req.payload.funcao === 'supervisor') {
+      // Verifica se o supervisor é responsável pelo veículo
+      if (inoperante.responsavel.id !== req.payload.id) {
+        return res.forbidden({ message: "Você não tem permissão para atualizar este registro." });
+      }
+    } else {
+      // Lógica para analista
+      // Só pode atualizar para FASE4 e apenas se estiver exatamente na FASE3
+      if (fase !== 'FASE4' || inoperante.faseAtual !== 'FASE3') {
+        return res.forbidden({ 
+          message: "Analistas só podem confirmar a finalização do serviço quando o supervisor indicar que o serviço está finalizado." 
+        });
+      }
+    }
+
+    // Atualiza a fase
+    const updated = await prisma.inoperante.update({
+      where: { id: parseInt(id) },
+      data: { 
+        faseAtual: fase,
+        updatedAt: new Date()
+      },
+      include: {
+        veiculo: {
+          select: {
+            placa: true,
+            marca: true,
+            modelo: true,
+          }
+        },
+        responsavel: {
+          select: {
+            nome: true,
+            funcao: true,
+          }
+        }
+      }
+    });
+
+    return res.ok(updated);
+  } catch (error) {
+    return next(error);
+  }
+};
 

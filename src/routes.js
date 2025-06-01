@@ -11,6 +11,7 @@ import UserRouter from "./routers/user/userRouter.js"
 import BudgetRouter from "./routers/budget/budgetRouter.js"
 import MaintenanceRouter from "./routers/maintenance/maintenanceRouter.js"
 import GarageRouter from "./routers/garage/garageRouter.js"
+import InoperativeRouter from "./routers/inoperative/inoperativeRouter.js"
 
 import { verify } from "./controllers/authController.js"
 

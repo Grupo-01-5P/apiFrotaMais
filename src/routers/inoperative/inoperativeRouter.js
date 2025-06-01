@@ -1,7 +1,7 @@
 import express from "express";
 import * as controller from "../../controllers/inoperativeController.js";
-// import maintenanceValidator from "./maintenanceValidator.js" <-- AJUSTAR ;
 import validator from "../../middlewares/validator.js";
+import { verify } from "../../controllers/authController.js";
 
 
 const router = express.Router();
@@ -18,8 +18,10 @@ router.get("/completed", (req, res, next) => {
   controller.listInoperantVehicles(req, res, next);
 });
 
-router.get("/:id", controller.getById);
+router.get("/:id/phase", verify, controller.getPhaseInfo);
 
-router.get("/phases", controller.getPhaseInfo);
+router.put("/:id/phase", verify, controller.updatePhase);
+
+router.get("/:id", controller.getById);
 
 export default router;
