@@ -1,5 +1,5 @@
 import prisma from "../config/database.js";
-
+import publishEmail from "../services/publish.js";
 
 export const list = async (req, res, next) => {
   /*
@@ -85,23 +85,91 @@ export const create = async (req, res, next) => {
     #swagger.summary = "Criar nova manutenção"
     #swagger.security = [{ "BearerAuth": [] }]
   */
+  try {
+    // Criar a manutenção
+    const nova = await prisma.manutencao.create({
+      data: {
+        veiculoId: req.body.veiculoId,
+        descricaoProblema: req.body.descricaoProblema,
+        latitude: req.body.latitude ? parseFloat(req.body.latitude) : null,
+        longitude: req.body.longitude ? parseFloat(req.body.longitude) : null,
+        urgencia: req.body.urgencia,
+        status: req.body.status || "pendente",
+        supervisorId: req.body.supervisorId
+      },
+      include: {
+        veiculo: {
+          select: {
+            placa: true,
+            marca: true,
+            modelo: true,
+            empresa: true,
+            departamento: true
+          }
+        },
+        supervisor: {
+          select: {
+            nome: true,
+            email: true
+          }
+        }
+      }
+    });
+    //pegando email de todos os analistas
+    const analistas = await prisma.usuario.findMany({
+      where: {
+        funcao: 'analista',
+      },
+      select: {
+        email: true
+      }
+    });
+    //monta string de emails
+    const emails = analistas.map(a => a.email).join(', ');
+    // Enviar notificação por email via RabbitMQ
     try {
-      const nova = await prisma.manutencao.create({
-        data: {
-          veiculoId: req.body.veiculoId,
-          descricaoProblema: req.body.descricaoProblema,
-          latitude: req.body.latitude ? parseFloat(req.body.latitude) : null,
-          longitude: req.body.longitude ? parseFloat(req.body.longitude) : null,
-          urgencia: req.body.urgencia,
-          status: req.body.status || "pendente",
-          supervisorId: req.body.supervisorId
+      await publishEmail({
+        to: `${nova.supervisor.email},${emails}`,
+        subject: `Nova Manutenção Criada - Veículo ${nova.veiculo.placa}`,
+        body: `
+        Uma nova manutenção foi criada e requer sua atenção:
+
+        Detalhes da Manutenção:
+        - ID: #${nova.id}
+        - Veículo: ${nova.veiculo.modelo} - Placa: ${nova.veiculo.placa}
+        - Descrição do Problema: ${nova.descricaoProblema}
+        - Urgência: ${nova.urgencia.toUpperCase()}
+        - Status: ${nova.status.toUpperCase()}
+        - Data de Criação: ${new Date(nova.dataSolicitacao).toLocaleString('pt-BR')}
+
+        ${nova.latitude && nova.longitude ? 
+          `Localização: Lat: ${nova.latitude}, Lng: ${nova.longitude}` : 
+          'Localização não informada'
+        }
+
+        Por favor, verifique o sistema para mais detalhes e tome as ações necessárias.
+
+        Atenciosamente,
+        Sistema de Manutenção
+        `.trim(),
+        metadata: {
+          maintenanceId: nova.id,
+          veiculoId: nova.veiculoId,
+          urgencia: nova.urgencia
         }
       });
-  
-      return res.created(res.hateos_item(nova));
-    } catch (error) {
-      return next(error);
+
+      console.log(`Notificação de manutenção enviada para: ${nova.supervisor.email}`);
+    } catch (emailError) {
+      // Log do erro mas não falha a criação da manutenção
+      console.error('Erro ao enviar notificação por email:', emailError.message);
+      // Você pode optar por salvar o erro em uma tabela de logs
     }
+
+    return res.created(res.hateos_item(nova));
+  } catch (error) {
+    return next(error);
+  }
 };
 
 export const update = async (req, res, next) => {
