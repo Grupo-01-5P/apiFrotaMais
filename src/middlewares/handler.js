@@ -29,5 +29,9 @@ export default (_, res, next) => {
     .status(httpStatus.NOT_FOUND)
     .send(data);
 
+  res.forbidden = (data) => res
+    .status(httpStatus.FORBIDDEN)
+    .json(data);
+    
   next();
 }
