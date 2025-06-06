@@ -21,5 +21,13 @@ export default (_, res, next) => {
     .status(httpStatus.UNAUTHORIZED)
     .send();
 
+  res.not_found = (data) => res
+    .status(httpStatus.NOT_FOUND)
+    .json(data);
+
+  res.forbidden = (data) => res
+    .status(httpStatus.FORBIDDEN)
+    .json(data);
+    
   next();
 }
