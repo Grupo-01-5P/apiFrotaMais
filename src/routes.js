@@ -8,6 +8,10 @@ import handler from "./middlewares/handler.js";
 
 import AuthRouter from "./routers/auth/authRouter.js"
 import UserRouter from "./routers/user/userRouter.js"
+import BudgetRouter from "./routers/budget/budgetRouter.js"
+import MaintenanceRouter from "./routers/maintenance/maintenanceRouter.js"
+import GarageRouter from "./routers/garage/garageRouter.js"
+import InoperativeRouter from "./routers/inoperative/inoperativeRouter.js"
 
 import { verify } from "./controllers/authController.js"
 
@@ -16,7 +20,13 @@ routes.use(hateos);
 routes.use(handler);
 
 routes.use("/login", AuthRouter)
+
 routes.use("/usuarios", verify, UserRouter)
+routes.use("/orcamento", verify, BudgetRouter)
+routes.use("/api/users", verify, UserRouter)
+routes.use("/api/maintenance", verify, MaintenanceRouter)
+routes.use("/api/garage", verify, GarageRouter)
+routes.use("/inoperative", InoperativeRouter)
 
 routes.use(InternalServerError)
 routes.use(NotFound);
