@@ -8,6 +8,8 @@ import validator from "../../middlewares/validator.js";
 const router = express.Router();
 
 router.get("/", controller.list);
+router.get("/withoutSupervisior", controller.getVehiclesWithoutSupervisor);
+router.get("/available", controller.getAvailable);
 router.get("/:id", controller.getById);
 router.post("/", validator(vehicleValidator), controller.create);
 router.put("/:id", validator(vehicleValidator), controller.update);
