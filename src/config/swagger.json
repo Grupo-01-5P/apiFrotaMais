@@ -1170,7 +1170,7 @@
         ]
       }
     },
-    "/api/maintenence/": {
+    "/api/maintenance/": {
       "get": {
         "tags": [
           "Maintenance"
@@ -1312,7 +1312,7 @@
         }
       }
     },
-    "/api/maintenence/{id}": {
+    "/api/maintenance/{id}": {
       "get": {
         "tags": [
           "Maintenance"
@@ -1479,7 +1479,7 @@
         ]
       }
     },
-    "/api/maintenence/{id}/aprovar": {
+    "/api/maintenance/{id}/aprovar": {
       "patch": {
         "tags": [
           "Maintenance"
@@ -1548,6 +1548,9 @@
                 "properties": {
                   "oficinaId": {
                     "example": "any"
+                  },
+                  "dataEnviarMecanica": {
+                    "example": "any"
                   }
                 }
               }
@@ -1556,7 +1559,7 @@
         }
       }
     },
-    "/api/maintenence/{id}/reprovar": {
+    "/api/maintenance/{id}/reprovar": {
       "patch": {
         "tags": [
           "Maintenance"

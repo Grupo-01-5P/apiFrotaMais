@@ -25,7 +25,7 @@ routes.use("/login", AuthRouter)
 routes.use("/usuarios", verify, UserRouter)
 routes.use("/orcamento", verify, BudgetRouter)
 routes.use("/api/users", verify, UserRouter)
-routes.use("/api/maintenence", verify, MaintenanceRouter)
+routes.use("/api/maintenance", verify, MaintenanceRouter)
 routes.use("/api/garage", verify, GarageRouter)
 routes.use("/api/veiculos", verify, VehicleRouter);
 

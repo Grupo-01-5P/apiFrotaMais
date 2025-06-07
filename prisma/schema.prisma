@@ -66,6 +66,7 @@ model Manutencao {
   dataSolicitacao   DateTime   @default(now())
   dataAprovacao     DateTime?
   dataReprovacao    DateTime?
+  dataEnviarMecanica DateTime?
   motivoReprovacao  String?
   supervisorId        Int
   supervisor          Usuario    @relation("UsuarioManutencoes", fields: [supervisorId], references: [id])

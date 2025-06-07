@@ -234,12 +234,28 @@ export const aprovar = async (req, res, next) => {
   */
   try {
     const id = parseInt(req.params.id);
-    const { oficinaId } = req.body; // Recebe o ID da oficina do corpo da requisição
+    const { oficinaId, dataEnviarMecanica } = req.body;
     
-    // Verificar se a manutenção existe e qual o status atual
+    // Verificar se a manutenção existe e buscar dados completos
     const manutencao = await prisma.manutencao.findUnique({
       where: { id },
-      select: { status: true }
+      include: {
+        veiculo: {
+          select: {
+            placa: true,
+            marca: true,
+            modelo: true,
+            empresa: true,
+            departamento: true
+          }
+        },
+        supervisor: {
+          select: {
+            nome: true,
+            email: true
+          }
+        }
+      }
     });
     
     if (!manutencao) {
@@ -253,9 +269,10 @@ export const aprovar = async (req, res, next) => {
       });
     }
 
+    let oficina = null;
     // Verificar se a oficina existe, se um ID foi fornecido
     if (oficinaId) {
-      const oficina = await prisma.oficina.findUnique({
+      oficina = await prisma.oficina.findUnique({
         where: { id: parseInt(oficinaId) }
       });
       
@@ -266,8 +283,9 @@ export const aprovar = async (req, res, next) => {
 
     // Preparar os dados para atualização
     const updateData = { 
-      status: "aprovada", // Note que mudei para minúsculo para manter consistência
-      dataAprovacao: new Date()
+      status: "aprovada",
+      dataAprovacao: new Date(),
+      dataEnviarMecanica: dataEnviarMecanica ? new Date(dataEnviarMecanica) : null
     };
 
     // Adicionar oficinaId apenas se foi fornecido
@@ -275,13 +293,117 @@ export const aprovar = async (req, res, next) => {
       updateData.oficinaId = parseInt(oficinaId);
     }
 
-    // Aprovar a manutenção e definir a oficina (se fornecida)
+    // Aprovar a manutenção
     const updated = await prisma.manutencao.update({
       where: { id },
-      data: updateData
+      data: updateData,
+      include: {
+        veiculo: true,
+        supervisor: true,
+        oficina: true
+      }
     });
 
-    return res.status(204).send(); // ou use seu método personalizado: res.no_content(res.hateos_item(updated));
+    // Enviar notificação por email via RabbitMQ
+    try {
+      let emailBody = `
+Olá ${manutencao.supervisor.nome},
+
+Sua solicitação de manutenção foi APROVADA! 🎉
+
+📋 DETALHES DA MANUTENÇÃO:
+• ID: #${manutencao.id}
+• Status: APROVADA ✅
+• Data de Aprovação: ${new Date().toLocaleString('pt-BR')}
+• Data de Solicitação: ${new Date(manutencao.dataSolicitacao).toLocaleString('pt-BR')}
+
+🚗 INFORMAÇÕES DO VEÍCULO:
+• Placa: ${manutencao.veiculo.placa}
+• Marca/Modelo: ${manutencao.veiculo.marca} ${manutencao.veiculo.modelo}
+• Empresa: ${manutencao.veiculo.empresa}
+• Departamento: ${manutencao.veiculo.departamento}
+
+🔧 DESCRIÇÃO DO PROBLEMA:
+${manutencao.descricaoProblema}
+
+🏢 INFORMAÇÕES DA OFICINA:`;
+
+      if (oficina) {
+        emailBody += `
+• Nome: ${oficina.nome}
+• CNPJ: ${oficina.cnpj}
+• Endereço: ${oficina.rua}, ${oficina.bairro} - ${oficina.cidade}/${oficina.estado}
+• Telefone: ${oficina.telefone}
+• Email: ${oficina.email}
+
+📍 PRÓXIMOS PASSOS:
+1. Entre em contato com a oficina para agendar a manutenção
+2. Leve o veículo na data e horário combinados
+3. Mantenha o comprovante da manutenção para registros`;
+      } else {
+        emailBody += `
+• Aguardando definição da oficina responsável
+• Você será notificado quando a oficina for definida`;
+      }
+
+      emailBody += `
+
+${manutencao.latitude && manutencao.longitude ? 
+  `📍 LOCALIZAÇÃO DO PROBLEMA:\nLatitude: ${manutencao.latitude}\nLongitude: ${manutencao.longitude}` : 
+  ''
+}
+
+Em caso de dúvidas, entre em contato conosco.
+
+Atenciosamente,
+Sistema de Gestão de Manutenções`;
+
+      await publishEmail({
+        to: manutencao.supervisor.email,
+        subject: `✅ Manutenção #${manutencao.id} APROVADA - Veículo ${manutencao.veiculo.placa}`,
+        body: emailBody.trim(),
+        priority: 'high',
+        template: 'manutencao-aprovada',
+        variables: {
+          supervisorNome: manutencao.supervisor.nome,
+          manutencaoId: manutencao.id,
+          veiculoPlaca: manutencao.veiculo.placa,
+          veiculoMarca: manutencao.veiculo.marca,
+          veiculoModelo: manutencao.veiculo.modelo,
+          empresa: manutencao.veiculo.empresa,
+          departamento: manutencao.veiculo.departamento,
+          descricaoProblema: manutencao.descricaoProblema,
+          dataAprovacao: new Date().toLocaleString('pt-BR'),
+          dataSolicitacao: new Date(manutencao.dataSolicitacao).toLocaleString('pt-BR'),
+          temOficina: !!oficina,
+          oficina: oficina ? {
+            nome: oficina.nome,
+            cnpj: oficina.cnpj,
+            endereco: `${oficina.rua}, ${oficina.bairro} - ${oficina.cidade}/${oficina.estado}`,
+            telefone: oficina.telefone,
+            email: oficina.email
+          } : null,
+          temLocalizacao: !!(manutencao.latitude && manutencao.longitude),
+          latitude: manutencao.latitude,
+          longitude: manutencao.longitude
+        },
+        metadata: {
+          tipo: 'manutencao-aprovada',
+          manutencaoId: manutencao.id,
+          veiculoId: manutencao.veiculoId,
+          supervisorId: manutencao.supervisorId,
+          oficinaId: oficinaId || null,
+          empresa: manutencao.veiculo.empresa
+        }
+      });
+
+      console.log(`✅ Notificação de aprovação enviada para: ${manutencao.supervisor.email} (Manutenção #${manutencao.id})`);
+    } catch (emailError) {
+      // Log do erro mas não falha a aprovação da manutenção
+      console.error(`❌ Erro ao enviar notificação de aprovação da manutenção #${manutencao.id}:`, emailError.message);
+    }
+    
+    return res.status(204).send();
   } catch (error) {
     console.error("Erro ao aprovar manutenção:", error);
     return next(error);
