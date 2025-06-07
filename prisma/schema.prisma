@@ -33,8 +33,8 @@ model Veiculo {
   empresa         String
   departamento    String
   tipoVeiculo     String
-  supervisorId    Int
-  supervisor      Usuario    @relation("UsuarioVeiculos", fields: [supervisorId], references: [id])
+  supervisorId    Int?
+  supervisor      Usuario?    @relation("UsuarioVeiculos", fields: [supervisorId], references: [id])
   manutencoes     Manutencao[]
   inoperantes Inoperante[] @relation("InoperanteVeiculo")
 }
@@ -67,6 +67,7 @@ model Manutencao {
   dataSolicitacao   DateTime   @default(now())
   dataAprovacao     DateTime?
   dataReprovacao    DateTime?
+  dataEnviarMecanica DateTime?
   motivoReprovacao  String?
   supervisorId        Int
   supervisor          Usuario    @relation("UsuarioManutencoes", fields: [supervisorId], references: [id])

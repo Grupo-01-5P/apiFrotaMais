@@ -1,5 +1,5 @@
 import prisma from "../config/database.js";
-
+import publishEmail from "../services/publish.js";
 
 export const list = async (req, res, next) => {
   /*
@@ -38,7 +38,8 @@ export const list = async (req, res, next) => {
         veiculo: true,
         supervisor: {
           select: { id: true, nome: true, email: true }
-        }
+        },
+        oficina: true,
       }
     });
 
@@ -84,23 +85,91 @@ export const create = async (req, res, next) => {
     #swagger.summary = "Criar nova manutenção"
     #swagger.security = [{ "BearerAuth": [] }]
   */
+  try {
+    // Criar a manutenção
+    const nova = await prisma.manutencao.create({
+      data: {
+        veiculoId: req.body.veiculoId,
+        descricaoProblema: req.body.descricaoProblema,
+        latitude: req.body.latitude ? parseFloat(req.body.latitude) : null,
+        longitude: req.body.longitude ? parseFloat(req.body.longitude) : null,
+        urgencia: req.body.urgencia,
+        status: req.body.status || "pendente",
+        supervisorId: req.body.supervisorId
+      },
+      include: {
+        veiculo: {
+          select: {
+            placa: true,
+            marca: true,
+            modelo: true,
+            empresa: true,
+            departamento: true
+          }
+        },
+        supervisor: {
+          select: {
+            nome: true,
+            email: true
+          }
+        }
+      }
+    });
+    //pegando email de todos os analistas
+    const analistas = await prisma.usuario.findMany({
+      where: {
+        funcao: 'analista',
+      },
+      select: {
+        email: true
+      }
+    });
+    //monta string de emails
+    const emails = analistas.map(a => a.email).join(', ');
+    // Enviar notificação por email via RabbitMQ
     try {
-      const nova = await prisma.manutencao.create({
-        data: {
-          veiculoId: req.body.veiculoId,
-          descricaoProblema: req.body.descricaoProblema,
-          latitude: req.body.latitude ? parseFloat(req.body.latitude) : null,
-          longitude: req.body.longitude ? parseFloat(req.body.longitude) : null,
-          urgencia: req.body.urgencia,
-          status: req.body.status || "pendente",
-          supervisorId: req.body.supervisorId
+      await publishEmail({
+        to: `${nova.supervisor.email},${emails}`,
+        subject: `Nova Manutenção Criada - Veículo ${nova.veiculo.placa}`,
+        body: `
+        Uma nova manutenção foi criada e requer sua atenção:
+
+        Detalhes da Manutenção:
+        - ID: #${nova.id}
+        - Veículo: ${nova.veiculo.modelo} - Placa: ${nova.veiculo.placa}
+        - Descrição do Problema: ${nova.descricaoProblema}
+        - Urgência: ${nova.urgencia.toUpperCase()}
+        - Status: ${nova.status.toUpperCase()}
+        - Data de Criação: ${new Date(nova.dataSolicitacao).toLocaleString('pt-BR')}
+
+        ${nova.latitude && nova.longitude ? 
+          `Localização: Lat: ${nova.latitude}, Lng: ${nova.longitude}` : 
+          'Localização não informada'
+        }
+
+        Por favor, verifique o sistema para mais detalhes e tome as ações necessárias.
+
+        Atenciosamente,
+        Sistema de Manutenção
+        `.trim(),
+        metadata: {
+          maintenanceId: nova.id,
+          veiculoId: nova.veiculoId,
+          urgencia: nova.urgencia
         }
       });
-  
-      return res.created(res.hateos_item(nova));
-    } catch (error) {
-      return next(error);
+
+      console.log(`Notificação de manutenção enviada para: ${nova.supervisor.email}`);
+    } catch (emailError) {
+      // Log do erro mas não falha a criação da manutenção
+      console.error('Erro ao enviar notificação por email:', emailError.message);
+      // Você pode optar por salvar o erro em uma tabela de logs
     }
+
+    return res.created(res.hateos_item(nova));
+  } catch (error) {
+    return next(error);
+  }
 };
 
 export const update = async (req, res, next) => {
@@ -165,12 +234,28 @@ export const aprovar = async (req, res, next) => {
   */
   try {
     const id = parseInt(req.params.id);
-    const { oficinaId } = req.body; // Recebe o ID da oficina do corpo da requisição
+    const { oficinaId, dataEnviarMecanica } = req.body;
     
-    // Verificar se a manutenção existe e qual o status atual
+    // Verificar se a manutenção existe e buscar dados completos
     const manutencao = await prisma.manutencao.findUnique({
       where: { id },
-      select: { status: true }
+      include: {
+        veiculo: {
+          select: {
+            placa: true,
+            marca: true,
+            modelo: true,
+            empresa: true,
+            departamento: true
+          }
+        },
+        supervisor: {
+          select: {
+            nome: true,
+            email: true
+          }
+        }
+      }
     });
     
     if (!manutencao) {
@@ -184,9 +269,10 @@ export const aprovar = async (req, res, next) => {
       });
     }
 
+    let oficina = null;
     // Verificar se a oficina existe, se um ID foi fornecido
     if (oficinaId) {
-      const oficina = await prisma.oficina.findUnique({
+      oficina = await prisma.oficina.findUnique({
         where: { id: parseInt(oficinaId) }
       });
       
@@ -197,8 +283,9 @@ export const aprovar = async (req, res, next) => {
 
     // Preparar os dados para atualização
     const updateData = { 
-      status: "aprovada", // Note que mudei para minúsculo para manter consistência
-      dataAprovacao: new Date()
+      status: "aprovada",
+      dataAprovacao: new Date(),
+      dataEnviarMecanica: dataEnviarMecanica ? new Date(dataEnviarMecanica) : null
     };
 
     // Adicionar oficinaId apenas se foi fornecido
@@ -206,13 +293,117 @@ export const aprovar = async (req, res, next) => {
       updateData.oficinaId = parseInt(oficinaId);
     }
 
-    // Aprovar a manutenção e definir a oficina (se fornecida)
+    // Aprovar a manutenção
     const updated = await prisma.manutencao.update({
       where: { id },
-      data: updateData
+      data: updateData,
+      include: {
+        veiculo: true,
+        supervisor: true,
+        oficina: true
+      }
     });
 
-    return res.status(204).send(); // ou use seu método personalizado: res.no_content(res.hateos_item(updated));
+    // Enviar notificação por email via RabbitMQ
+    try {
+      let emailBody = `
+Olá ${manutencao.supervisor.nome},
+
+Sua solicitação de manutenção foi APROVADA! 🎉
+
+📋 DETALHES DA MANUTENÇÃO:
+• ID: #${manutencao.id}
+• Status: APROVADA ✅
+• Data de Aprovação: ${new Date().toLocaleString('pt-BR')}
+• Data de Solicitação: ${new Date(manutencao.dataSolicitacao).toLocaleString('pt-BR')}
+
+🚗 INFORMAÇÕES DO VEÍCULO:
+• Placa: ${manutencao.veiculo.placa}
+• Marca/Modelo: ${manutencao.veiculo.marca} ${manutencao.veiculo.modelo}
+• Empresa: ${manutencao.veiculo.empresa}
+• Departamento: ${manutencao.veiculo.departamento}
+
+🔧 DESCRIÇÃO DO PROBLEMA:
+${manutencao.descricaoProblema}
+
+🏢 INFORMAÇÕES DA OFICINA:`;
+
+      if (oficina) {
+        emailBody += `
+• Nome: ${oficina.nome}
+• CNPJ: ${oficina.cnpj}
+• Endereço: ${oficina.rua}, ${oficina.bairro} - ${oficina.cidade}/${oficina.estado}
+• Telefone: ${oficina.telefone}
+• Email: ${oficina.email}
+
+📍 PRÓXIMOS PASSOS:
+1. Entre em contato com a oficina para agendar a manutenção
+2. Leve o veículo na data e horário combinados
+3. Mantenha o comprovante da manutenção para registros`;
+      } else {
+        emailBody += `
+• Aguardando definição da oficina responsável
+• Você será notificado quando a oficina for definida`;
+      }
+
+      emailBody += `
+
+${manutencao.latitude && manutencao.longitude ? 
+  `📍 LOCALIZAÇÃO DO PROBLEMA:\nLatitude: ${manutencao.latitude}\nLongitude: ${manutencao.longitude}` : 
+  ''
+}
+
+Em caso de dúvidas, entre em contato conosco.
+
+Atenciosamente,
+Sistema de Gestão de Manutenções`;
+
+      await publishEmail({
+        to: manutencao.supervisor.email,
+        subject: `✅ Manutenção #${manutencao.id} APROVADA - Veículo ${manutencao.veiculo.placa}`,
+        body: emailBody.trim(),
+        priority: 'high',
+        template: 'manutencao-aprovada',
+        variables: {
+          supervisorNome: manutencao.supervisor.nome,
+          manutencaoId: manutencao.id,
+          veiculoPlaca: manutencao.veiculo.placa,
+          veiculoMarca: manutencao.veiculo.marca,
+          veiculoModelo: manutencao.veiculo.modelo,
+          empresa: manutencao.veiculo.empresa,
+          departamento: manutencao.veiculo.departamento,
+          descricaoProblema: manutencao.descricaoProblema,
+          dataAprovacao: new Date().toLocaleString('pt-BR'),
+          dataSolicitacao: new Date(manutencao.dataSolicitacao).toLocaleString('pt-BR'),
+          temOficina: !!oficina,
+          oficina: oficina ? {
+            nome: oficina.nome,
+            cnpj: oficina.cnpj,
+            endereco: `${oficina.rua}, ${oficina.bairro} - ${oficina.cidade}/${oficina.estado}`,
+            telefone: oficina.telefone,
+            email: oficina.email
+          } : null,
+          temLocalizacao: !!(manutencao.latitude && manutencao.longitude),
+          latitude: manutencao.latitude,
+          longitude: manutencao.longitude
+        },
+        metadata: {
+          tipo: 'manutencao-aprovada',
+          manutencaoId: manutencao.id,
+          veiculoId: manutencao.veiculoId,
+          supervisorId: manutencao.supervisorId,
+          oficinaId: oficinaId || null,
+          empresa: manutencao.veiculo.empresa
+        }
+      });
+
+      console.log(`✅ Notificação de aprovação enviada para: ${manutencao.supervisor.email} (Manutenção #${manutencao.id})`);
+    } catch (emailError) {
+      // Log do erro mas não falha a aprovação da manutenção
+      console.error(`❌ Erro ao enviar notificação de aprovação da manutenção #${manutencao.id}:`, emailError.message);
+    }
+    
+    return res.status(204).send();
   } catch (error) {
     console.error("Erro ao aprovar manutenção:", error);
     return next(error);
