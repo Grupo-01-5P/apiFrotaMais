@@ -14,6 +14,7 @@ model Usuario {
   login    String    @unique
   senha    String
   funcao   String     // 'supervisor' ou 'analista'
+  ativo    Boolean   @default(true)
   veiculos Veiculo[]  @relation("UsuarioVeiculos")
   manutencoes Manutencao[] @relation("UsuarioManutencoes")
   inoperantesResponsavel Inoperante[] @relation("InoperanteResponsavel")
@@ -39,7 +40,7 @@ model Veiculo {
 }
 
 model Oficina {
-  id           Int        @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   nome         String
   cnpj         String
   rua          String
