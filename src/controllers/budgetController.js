@@ -56,16 +56,23 @@ export const list = async (req, res, next) => {
       include: {
         manutencao: {
           select: {
+            id: true, // Incluindo id da manutencao para referência
             veiculo: {
               select: {
-                placa: true, 
+                placa: true,
               },
             },
           },
         },
+        oficina: { // Incluindo informações básicas da oficina
+          select: {
+            id: true,
+            nome: true,
+          }
+        },
         produtos: {
           include: {
-            produto: true, 
+            produto: true,
           },
         },
       },
@@ -102,7 +109,7 @@ export const getById = async (req, res, next) => {
       include: {
         manutencao: {
           include: {
-            veiculo: true, 
+            veiculo: true,
           }
         },
         oficina: true,
@@ -135,13 +142,25 @@ export const create = async (req, res, next) => {
             properties: {
               descricaoServico: { type: "string" },
               valorMaoObra: { type: "number" },
-              status: { type: "string" },
-              dataEnvio: { type: "string", format: "date-time" },
+              status: { type: "string", default: "pendente", description: "Opcional. Default: 'pendente'" },
+              dataEnvio: { type: "string", format: "date-time", description: "Opcional. Se não fornecido, usa a data atual." },
               manutencaoId: { type: "integer" },
               oficinaId: { type: "integer" },
-              produtos: { type: "array" }
+              produtos: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    produtoId: { type: "integer" },
+                    valorUnitario: { type: "number" },
+                    fornecedor: { type: "string" }
+                  },
+                  required: ["produtoId", "valorUnitario", "fornecedor"]
+                },
+                description: "Lista de produtos para o orçamento. Opcional."
+              }
             },
-            required: ["descricaoServico", "valorMaoObra", "status", "dataEnvio", "manutencaoId", "oficinaId"]
+            required: ["descricaoServico", "valorMaoObra", "manutencaoId", "oficinaId"]
           }
         }
       }
@@ -149,17 +168,37 @@ export const create = async (req, res, next) => {
     #swagger.responses[201] = { description: "Orçamento criado com sucesso" }
   */
   try {
-    const { produtos, dataEnvio, ...rest } = req.body;
+    const { produtos, dataEnvio, ...restOfBody } = req.body;
+
+    const dataParaCriar = {
+      ...restOfBody,
+      ...(dataEnvio && { dataEnvio: new Date(dataEnvio).toISOString() }), 
+    };
+
+    if (produtos && Array.isArray(produtos) && produtos.length > 0) {
+      dataParaCriar.produtos = {
+        create: produtos.map(produto => ({
+          produtoId: produto.produtoId,
+          valorUnitario: produto.valorUnitario,
+          fornecedor: produto.fornecedor,
+        })),
+      };
+    }
 
     const orcamento = await prisma.orcamento.create({
-      data: {
-        ...rest,
-        dataEnvio: new Date(dataEnvio).toISOString(),
+      data: dataParaCriar,
+      include: { 
+        manutencao: { include: { veiculo: true } },
+        oficina: true,
+        produtos: { include: { produto: true } },
       },
     });
 
     return res.created(res.hateos_item(orcamento));
   } catch (error) {
+    if (error.code === 'P2002' && error.meta?.target?.includes('manutencaoId')) {
+      return res.status(409).json({ error: "Já existe um orçamento para esta manutenção." });
+    }
     return next(error);
   }
 };
@@ -169,19 +208,102 @@ export const update = async (req, res, next) => {
     #swagger.tags = ["Orçamentos"]
     #swagger.summary = "Atualiza um orçamento existente"
     #swagger.security = [{ "BearerAuth": [] }]
-    #swagger.responses[204] = { description: "Atualizado com sucesso" }
+    #swagger.requestBody = {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              descricaoServico: { type: "string" },
+              valorMaoObra: { type: "number" },
+              status: { type: "string" },
+              dataEnvio: { type: "string", format: "date-time" },
+              manutencaoId: { type: "integer", description: "Atenção: alterar pode reassociar o orçamento." },
+              oficinaId: { type: "integer" },
+              produtos: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    produtoId: { type: "integer" },
+                    valorUnitario: { type: "number" },
+                    fornecedor: { type: "string" }
+                  },
+                  required: ["produtoId", "valorUnitario", "fornecedor"]
+                },
+                description: "Lista completa de produtos. Substituirá os produtos existentes. Envie array vazio para remover todos os produtos."
+              }
+            }
+          }
+        }
+      }
+    }
+    #swagger.responses[200] = { description: "Atualizado com sucesso, retorna o orçamento atualizado" }
     #swagger.responses[404] = { description: "Orçamento não encontrado" }
   */
   try {
     const id = parseInt(req.params.id);
-    const orcamento = await prisma.orcamento.update({
-      where: { id },
-      data: req.body,
+    const { produtos, dataEnvio, ...restOfBody } = req.body;
+
+    // Verificar se o orçamento existe
+    const existingOrcamento = await prisma.orcamento.findUnique({ where: { id } });
+    if (!existingOrcamento) {
+      return res.status(404).json({ error: "Orçamento não encontrado." });
+    }
+
+    const updatedOrcamento = await prisma.$transaction(async (tx) => {
+      // 1. Atualizar os campos escalares do Orcamento
+      await tx.orcamento.update({
+        where: { id },
+        data: {
+          ...restOfBody,
+          ...(dataEnvio && { dataEnvio: new Date(dataEnvio).toISOString() }),
+        },
+      });
+
+      // 2. Gerenciar a relação 'produtos' se 'produtos' for fornecido no corpo da requisição
+      if (typeof produtos !== 'undefined') {
+        // 2a. Remover todos os ProdutoOrcamento existentes para este orçamento
+        await tx.produtoOrcamento.deleteMany({
+          where: { orcamentoId: id },
+        });
+
+        // 2b. Criar os novos ProdutoOrcamento se a lista não for vazia
+        if (Array.isArray(produtos) && produtos.length > 0) {
+          await tx.produtoOrcamento.createMany({
+            data: produtos.map(p => ({
+              orcamentoId: id, // Associar ao orçamento atual
+              produtoId: p.produtoId,
+              valorUnitario: p.valorUnitario,
+              fornecedor: p.fornecedor,
+            })),
+          });
+        }
+      }
+
+      // 3. Buscar e retornar o orçamento completamente atualizado
+      return tx.orcamento.findUnique({
+        where: { id },
+        include: {
+          manutencao: { include: { veiculo: true } },
+          oficina: true,
+          produtos: { include: { produto: true } },
+        },
+      });
     });
 
-    return res.no_content(res.hateos_item(orcamento));
+    return res.ok(res.hateos_item(updatedOrcamento));
   } catch (error) {
-    return res.status(404).json({ error: "Orçamento não encontrado ou inválido." });
+     if (error.code === 'P2002' && error.meta?.target?.includes('manutencaoId')) {
+      return res.status(409).json({ error: "Já existe um orçamento para esta manutenção." });
+    }
+    // P2025 é "Record to update not found", mas já verificamos a existência.
+    // No entanto, pode acontecer em condições de corrida ou se a transação falhar por outro motivo.
+    if (error.code === 'P2025') {
+        return res.status(404).json({ error: "Operação falhou: Orçamento não encontrado." });
+    }
+    return next(error);
   }
 };
 
@@ -195,9 +317,27 @@ export const remove = async (req, res, next) => {
   */
   try {
     const id = parseInt(req.params.id);
-    await prisma.orcamento.delete({ where: { id } });
+
+    // A transação garante que ambas as operações (ou nenhuma) sejam concluídas.
+    // O Prisma geralmente lida com a ordem de exclusão de dependências,
+    // mas a exclusão explícita de ProdutoOrcamento é mais segura.
+    await prisma.$transaction(async (tx) => {
+      // 1. Deletar os ProdutoOrcamento associados
+      await tx.produtoOrcamento.deleteMany({
+        where: { orcamentoId: id },
+      });
+      // 2. Deletar o Orcamento
+      // Se o orçamento não existir, o Prisma lançará um erro P2025.
+      await tx.orcamento.delete({
+        where: { id },
+      });
+    });
+
     return res.no_content();
   } catch (error) {
-    return res.status(404).json({ error: "Orçamento não encontrado." });
+    if (error.code === 'P2025') { // "Record to delete not found"
+      return res.status(404).json({ error: "Orçamento não encontrado." });
+    }
+    return next(error); // Outros erros são passados para o manipulador de erros global
   }
 };
