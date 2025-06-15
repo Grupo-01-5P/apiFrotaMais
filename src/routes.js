@@ -30,7 +30,8 @@ routes.use("/api/maintenance", verify, MaintenanceRouter)
 routes.use("/api/garage", verify, GarageRouter)
 routes.use("/api/veiculos", verify, VehicleRouter);
 routes.use("/inoperative", InoperativeRouter)
-routes.use("/api/products", verify, ProductRouter)
+routes.use("/api/products/search", ProductRouter) // Rota pública para busca
+routes.use("/api/products", verify, ProductRouter) // Rotas protegidas
 
 routes.use(InternalServerError)
 routes.use(NotFound);
