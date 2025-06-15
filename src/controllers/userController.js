@@ -58,6 +58,13 @@ export const list = async (req, res, next) => {
         type: 'string',
         enum: ['asc', 'desc']
       }
+      #swagger.parameters['funcao'] = {
+        in: 'query',
+        description: 'Filter by user role (analista or supervisor)',
+        required: false,
+        type: 'string',
+        enum: ['analista', 'supervisor']
+      }
       #swagger.responses[200] = {
         description: "List of users with pagination",
         content: {
@@ -78,6 +85,18 @@ export const list = async (req, res, next) => {
                     }
                   }
                 },
+                meta: {
+                  type: "object",
+                  properties: {
+                    totalItems: { type: "integer" },
+                    currentPage: { type: "integer" },
+                    totalPages: { type: "integer" },
+                    itemsPerPage: { type: "integer" },
+                    hasNextPage: { type: "boolean" },
+                    hasPrevPage: { type: "boolean" },
+                    filteredBy: { type: "string" }
+                  }
+                }
               }
             }
           }
@@ -88,16 +107,31 @@ export const list = async (req, res, next) => {
       const page = parseInt(req.query._page) || 1;
       const limit = parseInt(req.query._limit) || 10;
       const offset = (page - 1) * limit;
-  
-      const totalItems = await prisma.usuario.count();
+      
+      // Filtro de função
+      const funcaoFilter = req.query.funcao;
+      const validFuncoes = ['analista', 'supervisor'];
+      
+      // Construir where clause
+      const whereClause = {};
+      if (funcaoFilter && validFuncoes.includes(funcaoFilter.toLowerCase())) {
+        whereClause.funcao = funcaoFilter.toLowerCase();
+      }
+
+      // Contar total de itens com o filtro aplicado
+      const totalItems = await prisma.usuario.count({
+        where: whereClause
+      });
+      
       const totalPages = Math.ceil(totalItems / limit);
-  
+
       const order = req.query._order?.toLowerCase() === "desc" ? "desc" : "asc";
       const sort = req.query._sort;
       const validSortFields = ["id", "nome", "email", "login", "funcao"];
       const orderBy = validSortFields.includes(sort) ? { [sort]: order } : undefined;
-  
+
       const users = await prisma.usuario.findMany({
+        where: whereClause,
         skip: offset,
         take: limit,
         ...(orderBy && { orderBy }),
@@ -109,7 +143,7 @@ export const list = async (req, res, next) => {
           funcao: true,
         },
       });
-  
+
       return res.ok({
         data: users,
         meta: {
@@ -119,13 +153,15 @@ export const list = async (req, res, next) => {
           itemsPerPage: limit,
           hasNextPage: page < totalPages,
           hasPrevPage: page > 1,
+          ...(funcaoFilter && validFuncoes.includes(funcaoFilter.toLowerCase()) && {
+            filteredBy: funcaoFilter.toLowerCase()
+          })
         }
       });
     } catch (error) {
       return next(error);
     }
-  };
-  
+};
   
 
 export const getById = async (req, res, next) => {
