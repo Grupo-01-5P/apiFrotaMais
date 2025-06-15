@@ -37,7 +37,13 @@ const doc = {
         departamento: { type: "string" },
         tipoVeiculo: { type: "string", enum: ["carro", "moto", "caminhão", "ônibus", "van"] },
         supervisorId: { type: "integer" }
-}
+      },
+      Product: {
+        id: { type: "integer" },
+        nome: { type: "string" },
+        descricao: { type: "string" },
+        precoMedio: { type: "number", format: "float" }
+      }
     },
     securitySchemes: {
         BearerAuth: {
