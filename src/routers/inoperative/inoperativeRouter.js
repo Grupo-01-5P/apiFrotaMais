@@ -5,28 +5,22 @@ import { verify } from "../../controllers/authController.js";
 
 const router = express.Router();
 
+// Verifica se um veículo já está inoperante
+router.get("/check/:veiculoId", verify, controller.checkVehicleInoperative);
 
-router.get("/", controller.listInoperantVehicles);
+// Criar novo veículo inoperante automaticamente
+router.post("/vehicle/:veiculoId", verify, controller.create);
 
+// Lista todos os veículos inoperantes
+router.get("/", verify, controller.listInoperantVehicles);
 
-router.get("/inoperative", (req, res, next) => {
-  req.query.status = "aprovado";
-  controller.listInoperantVehicles(req, res, next);
-});
+// Busca um veículo inoperante específico
+router.get("/:id", verify, controller.getById);
 
+// Busca a fase atual de um veículo inoperante
+router.get("/:id/phase", verify, controller.getPhase);
 
-router.get("/completed", (req, res, next) => {
-  req.query.status = "concluido";
-  controller.listInoperantVehicles(req, res, next);
-});
-
-
-router.get("/:id/phase", verify, controller.getPhaseInfo);
-
-
+// Atualiza a fase de um veículo inoperante
 router.put("/:id/phase", verify, controller.updatePhase);
-
-
-router.get("/:id", controller.getById);
 
 export default router;
