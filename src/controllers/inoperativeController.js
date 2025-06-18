@@ -31,7 +31,7 @@ export const listInoperantVehicles = async (req, res, next) => {
     const { _page, _limit, _sort, _order, status } = req.query;
 
     // Se não passar status, usa os dois padrões
-    const statusFiltro = status ? [status] : ['aprovada', 'concluida'];
+    const statusFiltro = status ? [status] : ['aprovada', 'concluída'];
 
     const whereClause = {
       status: { in: statusFiltro }
@@ -352,7 +352,7 @@ export const updatePhase = async (req, res, next) => {
         await prisma.manutencao.update({
           where: { id: manutencao.id },
           data: {
-            status: 'concluida'
+            status: 'concluída'
           }
         });
       }
@@ -485,24 +485,25 @@ export const getPhase = async (req, res, next) => {
 export const create = async (req, res, next) => {
   /*
     #swagger.tags = ["Inoperative"]
-    #swagger.summary = "Criar novo veículo inoperante"
+    #swagger.summary = "Criar novo inoperante a partir de uma manutenção"
     #swagger.security = [{ "BearerAuth": [] }]
   */
   try {
-    const { veiculoId } = req.params;
-    console.log('Criando inoperante para veículo:', veiculoId);
+    const { manutencaoId } = req.params;
+    
+    console.log('Criando inoperante para manutenção:', manutencaoId);
 
-    if (!veiculoId || isNaN(parseInt(veiculoId))) {
+    if (!manutencaoId || isNaN(parseInt(manutencaoId))) {
       return res.status(400).json({
         success: false,
-        message: 'ID do veículo inválido'
+        message: 'ID da manutenção inválido'
       });
     }
 
-    // Verifica se o veículo existe e busca sua manutenção ativa
+    // Busca a manutenção específica
     const manutencao = await prisma.manutencao.findFirst({
       where: {
-        veiculoId: parseInt(veiculoId),
+        id: parseInt(manutencaoId),
         status: {
           in: ['aprovada', 'em_andamento']
         },
@@ -516,17 +517,19 @@ export const create = async (req, res, next) => {
       }
     });
 
+    console.log('Manutenção encontrada:', manutencao);
+
     if (!manutencao) {
       return res.status(404).json({
         success: false,
-        message: 'Veículo não possui manutenção ativa ou aprovada'
+        message: 'Manutenção não encontrada ou não elegível'
       });
     }
 
-    // Verifica se já existe um inoperante ativo para este veículo
+    // Verifica se já existe um inoperante ativo para esta manutenção
     const inoperanteExistente = await prisma.inoperante.findFirst({
       where: {
-        veiculoId: parseInt(veiculoId),
+        manutencaoId: parseInt(manutencaoId),
         faseAtual: {
           not: 'FASE5' // FASE5 indica que o processo foi concluído
         }
@@ -536,7 +539,7 @@ export const create = async (req, res, next) => {
     if (inoperanteExistente) {
       return res.status(400).json({
         success: false,
-        message: 'Veículo já possui um registro inoperante ativo',
+        message: 'Manutenção já possui um registro inoperante ativo',
         data: {
           id: inoperanteExistente.id,
           faseAtual: inoperanteExistente.faseAtual
@@ -544,13 +547,14 @@ export const create = async (req, res, next) => {
       });
     }
 
-    // Cria o inoperante usando a oficina da manutenção
+    // Cria o inoperante vinculado à manutenção
     const inoperante = await prisma.inoperante.create({
       data: {
-        veiculoId: parseInt(veiculoId),
+        veiculoId: manutencao.veiculoId,
         oficinaId: manutencao.oficinaId,
-        responsavelId: req.payload.id, // Usa o ID do usuário logado como responsável
-        faseAtual: 'FASE1' // Começa na FASE1
+        responsavelId: req.payload.id,
+        manutencaoId: parseInt(manutencaoId),
+        faseAtual: 'FASE1'
       },
       include: {
         veiculo: {
@@ -572,7 +576,8 @@ export const create = async (req, res, next) => {
             nome: true,
             email: true
           }
-        }
+        },
+        manutencao: true
       }
     });
 
@@ -580,7 +585,7 @@ export const create = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Veículo inoperante criado com sucesso',
+      message: 'Inoperante criado com sucesso',
       data: inoperante
     });
 
@@ -594,46 +599,65 @@ export const create = async (req, res, next) => {
   }
 };
 
-export const checkVehicleInoperative = async (req, res, next) => {
+export const checkMaintenanceInoperative = async (req, res, next) => {
   /*
     #swagger.tags = ["Inoperative"]
-    #swagger.summary = "Verifica se um veículo já está inoperante"
+    #swagger.summary = "Verifica se uma manutenção já tem inoperante associado"
     #swagger.security = [{ "BearerAuth": [] }]
   */
   try {
-    const { veiculoId } = req.params;
+    const { manutencaoId } = req.params;
 
-    if (!veiculoId || isNaN(parseInt(veiculoId))) {
-      return res.status(400).json({
-        success: false,
-        message: 'ID do veículo inválido'
-      });
-    }
-
-    // Busca inoperante ativo para o veículo (que não esteja na FASE5)
-    const inoperante = await prisma.inoperante.findFirst({
+    // Primeiro, verifica se já existe um inoperante para esta manutenção
+    const existingInoperative = await prisma.inoperante.findFirst({
       where: {
-        veiculoId: parseInt(veiculoId),
-        faseAtual: {
-          not: 'FASE5' // FASE5 indica que o processo foi concluído
-        }
+        manutencaoId: parseInt(manutencaoId)
       }
     });
 
+    if (existingInoperative) {
+      return res.status(200).json({
+        success: true,
+        exists: true,
+        isEligible: true,
+        message: 'Inoperante encontrado para esta manutenção',
+        data: existingInoperative
+      });
+    }
+
+    // Se não existe inoperante, verifica se a manutenção é elegível
+    const maintenance = await prisma.manutencao.findUnique({
+      where: {
+        id: parseInt(manutencaoId)
+      }
+    });
+
+    if (!maintenance) {
+      return res.status(200).json({
+        success: true,
+        exists: false,
+        isEligible: false,
+        message: 'Manutenção não encontrada',
+        data: null
+      });
+    }
+
+    // Verifica se a manutenção está em um estado que permite criar inoperante
+    const isEligible = maintenance.status === 'aprovada' || maintenance.status === 'em_andamento';
+
     return res.status(200).json({
       success: true,
-      exists: !!inoperante,
-      data: inoperante ? {
-        id: inoperante.id,
-        faseAtual: inoperante.faseAtual
-      } : null
+      exists: false,
+      isEligible: isEligible,
+      message: isEligible ? 'Manutenção elegível para criar inoperante' : 'Manutenção não está em estado elegível para criar inoperante',
+      data: null
     });
 
   } catch (error) {
-    console.error('Erro ao verificar veículo inoperante:', error);
+    console.error('Erro ao verificar inoperante da manutenção:', error);
     return res.status(500).json({
       success: false,
-      message: 'Erro interno do servidor',
+      message: 'Erro ao verificar inoperante da manutenção',
       error: error.message
     });
   }

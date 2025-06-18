@@ -5,11 +5,11 @@ import { verify } from "../../controllers/authController.js";
 
 const router = express.Router();
 
-// Verifica se um veículo já está inoperante
-router.get("/check/:veiculoId", verify, controller.checkVehicleInoperative);
+// Verifica se uma manutenção já tem inoperante associado
+router.get("/check/maintenance/:manutencaoId", verify, controller.checkMaintenanceInoperative);
 
-// Criar novo veículo inoperante automaticamente
-router.post("/vehicle/:veiculoId", verify, controller.create);
+// Criar novo inoperante a partir de uma manutenção
+router.post("/maintenance/:manutencaoId", verify, controller.create);
 
 // Lista todos os veículos inoperantes
 router.get("/", verify, controller.listInoperantVehicles);

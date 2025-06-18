@@ -75,6 +75,7 @@ model Manutencao {
   oficina           Oficina?   @relation(fields: [oficinaId], references: [id]) // Relação opcional com Oficina
   orcamento         Orcamento?
   entrega           Entrega?
+  inoperante        Inoperante?  // Relação um-para-um com Inoperante
 }
 
 model Orcamento {
@@ -135,6 +136,8 @@ model Inoperante {
   oficina        Oficina  @relation("InoperanteOficina", fields: [oficinaId], references: [id])
   responsavelId  Int
   responsavel    Usuario  @relation("InoperanteResponsavel", fields: [responsavelId], references: [id])
+  manutencaoId   Int      @unique  
+  manutencao     Manutencao @relation(fields: [manutencaoId], references: [id])
   faseAtual      FaseInoperante @default(FASE1)
   updatedAt      DateTime @updatedAt
 }
