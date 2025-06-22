@@ -318,26 +318,46 @@ export const remove = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
 
-    // A transação garante que ambas as operações (ou nenhuma) sejam concluídas.
-    // O Prisma geralmente lida com a ordem de exclusão de dependências,
-    // mas a exclusão explícita de ProdutoOrcamento é mais segura.
+    // Buscar o orçamento para verificar se existe e obter dados necessários
+    const orcamento = await prisma.orcamento.findUnique({
+      where: { id },
+    });
+
+    if (!orcamento) {
+      return res.status(404).json({ error: "Orçamento não encontrado." });
+    }
+
+    console.log("Removendo orçamento:", orcamento);
+
+    // Executar todas as operações em uma única transação
     await prisma.$transaction(async (tx) => {
       // 1. Deletar os ProdutoOrcamento associados
       await tx.produtoOrcamento.deleteMany({
         where: { orcamentoId: id },
       });
-      // 2. Deletar o Orcamento
-      // Se o orçamento não existir, o Prisma lançará um erro P2025.
+
+      // 2. Deletar o orçamento
       await tx.orcamento.delete({
         where: { id },
       });
+
+      // 3. ✅ CORREÇÃO: Voltar status da manutenção para "pendente" se existir
+      if (orcamento.manutencaoId) {
+        await tx.manutencao.update({
+          where: { id: orcamento.manutencaoId },
+          data: { status: "aprovada" }
+        });
+      }
     });
 
-    return res.no_content();
+    return res.status(204).send(); // ou res.no_content() se você tem esse método customizado
   } catch (error) {
-    if (error.code === 'P2025') { // "Record to delete not found"
+    if (error.code === 'P2025') { 
+      // "Record to delete not found" - pode acontecer se o orçamento for deletado entre a verificação e a deleção
       return res.status(404).json({ error: "Orçamento não encontrado." });
     }
+    
+    console.error("Erro ao remover orçamento:", error);
     return next(error); // Outros erros são passados para o manipulador de erros global
   }
 };
