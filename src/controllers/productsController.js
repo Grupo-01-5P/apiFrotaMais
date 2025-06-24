@@ -101,8 +101,7 @@ export const getByName = async (req, res, next) => {
   /*
     #swagger.tags = ["Products"]
     #swagger.summary = "Busca produtos por nome"
-    #swagger.description = "Endpoint para buscar produtos pelo nome. Apenas analistas podem acessar."
-    #swagger.security = [{ "BearerAuth": [] }]
+    #swagger.description = "Endpoint para buscar produtos pelo nome"
     #swagger.parameters['nome'] = {
       in: 'query',
       description: 'Nome do produto',
@@ -122,34 +121,28 @@ export const getByName = async (req, res, next) => {
       description: 'Nenhum produto encontrado',
       schema: { message: "Nenhum produto encontrado com este nome." }
     }
-    #swagger.responses[403] = {
-      description: 'Acesso negado',
-      schema: { message: "Apenas analistas podem realizar operações com produtos." }
-    }
   */
   try {
-    await checkAnalistaRole(req, res, async () => {
-      const { nome } = req.query;
+    const { nome } = req.query;
 
-      if (!nome) {
-        return res.bad_request({ message: "O nome do produto é obrigatório para a busca." });
-      }
+    if (!nome) {
+      return res.bad_request({ message: "O nome do produto é obrigatório para a busca." });
+    }
 
-      const products = await prisma.produto.findMany({
-        where: {
-          nome: {
-            contains: nome,
-            mode: 'insensitive' // Busca case-insensitive
-          }
+    const products = await prisma.produto.findMany({
+      where: {
+        nome: {
+          contains: nome,
+          mode: 'insensitive' // Busca case-insensitive
         }
-      });
-
-      if (products.length === 0) {
-        return res.not_found({ message: "Nenhum produto encontrado com este nome." });
       }
-
-      return res.ok(products);
     });
+
+    if (products.length === 0) {
+      return res.not_found({ message: "Nenhum produto encontrado com este nome." });
+    }
+
+    return res.ok(products);
   } catch (error) {
     return next(error);
   }

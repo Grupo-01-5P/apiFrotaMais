@@ -6,7 +6,7 @@ import { verify } from "../../controllers/authController.js";
 const router = express.Router();
 
 router.get("/", verify, controller.listProducts);
-router.get("/getByName", verify, controller.getByName);
+router.get("/getByName", controller.getByName);
 router.post("/createProduct", verify, controller.createProduct);
 router.put("/updateProduct/:nome", verify, controller.updateProduct);
 router.delete("/deleteProduct/:nome", verify, controller.deleteProduct);
